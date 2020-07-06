@@ -21,7 +21,7 @@ SATURN_DETAILS_RESPONSE = {
     "host_aliases": [],
     "deployment_token": TEST_DEPLOYMENT_TOKEN,
     "image_name": TEST_IMAGE,
-    "environment_variables": {}
+    "environment_variables": {},
 }
 
 
