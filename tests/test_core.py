@@ -5,41 +5,130 @@ import random
 import responses
 import uuid
 
+from copy import deepcopy
+from typing import Any, Dict, Optional
+
 from prefect import task, Flow
 from prefect.engine.executors import DaskExecutor
 from prefect.environments import KubernetesJobEnvironment
 from prefect.environments.storage import Docker
+from pytest import raises
+from requests.exceptions import HTTPError
 
 os.environ["SATURN_TOKEN"] = "placeholder-token"
 os.environ["BASE_URL"] = "http://placeholder-url"
 
-TEST_IMAGE = "test-image:0.1"
+TEST_FLOW_ID = random.randint(1, 500)
+TEST_FLOW_NAME = "plz-w0rk"
 TEST_DEPLOYMENT_TOKEN = str(uuid.uuid4())
+TEST_IMAGE = "test-image:0.1"
+TEST_PREFECT_PROJECT_NAME = "i-luv-pr3f3ct"
 TEST_REGISTRY_URL = "12345.ecr.aws"
+
+
+@task
+def hello_task():
+    logger = prefect.context.get("logger")
+    logger.info("hola")
+
+
+TEST_FLOW = Flow(TEST_FLOW_NAME, tasks=[hello_task])
+
+# ------------------ #
+# /api/current_image #
+# ------------------ #
+CURRENT_IMAGE_RESPONSE = {
+    "method": responses.GET,
+    "url": f"{os.environ['BASE_URL']}/api/current_image",
+    "json": {"image": TEST_IMAGE},
+    "status": 200,
+}
+
+
+def CURRENT_IMAGE_FAILURE_RESPONSE(status: int):
+    return {
+        "method": responses.GET,
+        "url": f"{os.environ['BASE_URL']}/api/current_image",
+        "json": {"image": TEST_IMAGE},
+        "status": status,
+    }
+
+
+# ------------------------ #
+# /api/prefect_cloud/flows #
+# ------------------------ #
+def REGISTER_FLOW_RESPONSE(
+    flow_id: Optional[int] = None,
+    name: Optional[str] = None,
+    prefect_cloud_project_name: Optional[str] = None,
+    flow_hash: Optional[str] = None,
+    deployment_id: Optional[int] = None,
+    status: Optional[int] = None,
+) -> Dict[str, Any]:
+    return {
+        "method": responses.PUT,
+        "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows",
+        "json": {
+            "id": flow_id or TEST_FLOW_ID,
+            "name": name or "c00l-flow",
+            "prefect_cloud_project_name": prefect_cloud_project_name or TEST_PREFECT_PROJECT_NAME,
+            "flow_hash": flow_hash or "chicago",
+            "deployment": {"id": deployment_id or random.randint(1, 500)},
+        },
+        "status": status or 201,
+    }
+
+
+def REGISTER_FLOW_FAILURE_RESPONSE(status: int):
+    return {
+        "method": responses.PUT,
+        "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows",
+        "status": status,
+    }
+
+
+# -------------------------------------------- #
+# /api/prefect_cloud/flows/{id}/saturn_details #
+# -------------------------------------------- #
 SATURN_DETAILS_RESPONSE = {
-    "registry_url": TEST_REGISTRY_URL,
-    "host_aliases": [],
-    "deployment_token": TEST_DEPLOYMENT_TOKEN,
-    "image_name": TEST_IMAGE,
-    "environment_variables": {},
+    "method": responses.GET,
+    "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{TEST_FLOW_ID}/saturn_details",
+    "json": {
+        "registry_url": TEST_REGISTRY_URL,
+        "host_aliases": [],
+        "deployment_token": TEST_DEPLOYMENT_TOKEN,
+        "image_name": TEST_IMAGE,
+        "environment_variables": {},
+    },
+    "status": 200,
+}
+
+SATURN_DETAILS_FAILURE_RESPONSE = {
+    "method": responses.GET,
+    "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{TEST_FLOW_ID}/saturn_details",
+    "status": 404,
+}
+
+# ----------------------------------- #
+# /api/prefect_cloud/flows/{id}/store #
+# ----------------------------------- #
+BUILD_STORAGE_RESPONSE = {
+    "method": responses.POST,
+    "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{TEST_FLOW_ID}/store",
+    "status": 201,
 }
 
 
 @responses.activate
 def test_initialize():
-    test_image = "test-image:0.1"
-    responses.add(
-        responses.GET,
-        f"{os.environ['BASE_URL']}/api/current_image",
-        json={"image": test_image},
-        status=200,
-    )
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+
     project_name = "some-pr0ject"
     integration = prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=project_name)
     assert getattr(integration, "SATURN_TOKEN", None) is None
     assert integration._session.headers["Authorization"] == f"token {os.environ['SATURN_TOKEN']}"
     assert integration.prefect_cloud_project_name == project_name
-    assert integration._saturn_base_image == test_image
+    assert integration._saturn_base_image == TEST_IMAGE
     assert integration._saturn_flow_id is None
 
     # __init__() should add this trailing slash if it's necessary
@@ -47,23 +136,40 @@ def test_initialize():
 
 
 @responses.activate
+def test_initialize_raises_error_on_failure():
+    responses.add(**CURRENT_IMAGE_FAILURE_RESPONSE(403))
+
+    with raises(HTTPError, match="403 Client Error"):
+        prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME)
+
+    failure_response = CURRENT_IMAGE_FAILURE_RESPONSE(504)
+    failure_response["method_or_response"] = failure_response.pop("method")
+    responses.replace(**failure_response)
+    with raises(HTTPError, match="504 Server Error"):
+        prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME)
+
+
+def test_initialize_raises_error_on_missing_saturn_token(monkeypatch):
+    monkeypatch.delenv("SATURN_TOKEN")
+    with raises(RuntimeError, match=prefect_saturn.Errors.missing_env_var("SATURN_TOKEN")):
+        prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME)
+
+
+def test_initialize_raises_error_on_missing_base_url(monkeypatch):
+    monkeypatch.delenv("BASE_URL")
+    with raises(RuntimeError, match=prefect_saturn.Errors.missing_env_var("BASE_URL")):
+        prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME)
+
+
+@responses.activate
 def test_hash_flow():
-    @task
-    def hello_task():
-        logger = prefect.context.get("logger")
-        logger.info("hola")
+    responses.add(**CURRENT_IMAGE_RESPONSE)
 
-    flow = Flow("plase-work", tasks=[hello_task])
+    flow = TEST_FLOW.copy()
 
-    test_image = "test-image:0.1"
-    responses.add(
-        responses.GET,
-        f"{os.environ['BASE_URL']}/api/current_image",
-        json={"image": test_image},
-        status=200,
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
     )
-    project_name = "some-pr0ject"
-    integration = prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=project_name)
 
     flow_hash = integration._hash_flow(flow)
     assert isinstance(flow_hash, str) and len(flow_hash) > 0
@@ -95,71 +201,57 @@ def test_hash_flow():
 
 @responses.activate
 def test_register_flow_with_saturn():
-    @task
-    def hello_task():
-        logger = prefect.context.get("logger")
-        logger.info("hola")
-
-    project_name = "some-pr0ject"
-    flow_name = "plz-w0rk"
-    flow = Flow(flow_name, tasks=[hello_task])
+    test_flow_id = random.randint(1, 500)
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    responses.add(**REGISTER_FLOW_RESPONSE(flow_id=test_flow_id))
 
     # Set up integration
-    test_image = "test-image:0.1"
-    responses.add(
-        responses.GET,
-        f"{os.environ['BASE_URL']}/api/current_image",
-        json={"image": test_image},
-        status=200,
-    )
-    integration = prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=project_name)
-
-    # register flow
-    test_id = random.randint(1, 500)
-    responses.add(
-        responses.PUT,
-        f"{os.environ['BASE_URL']}/api/prefect_cloud/flows",
-        json={
-            "id": test_id,
-            "name": flow_name,
-            "prefect_cloud_project_name": project_name,
-            "flow_hash": integration._hash_flow(flow),
-            "deployment": {"id": random.randint(1, 500)},
-        },
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
     )
 
     assert integration._saturn_flow_id is None
-    integration.register_flow_with_saturn(flow=flow)
-    assert integration._saturn_flow_id == test_id
+    integration.register_flow_with_saturn(flow=TEST_FLOW.copy())
+    assert integration._saturn_flow_id == test_flow_id
+
+
+@responses.activate
+def test_register_flow_with_saturn_raises_error_on_failure():
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+    )
+
+    responses.add(**REGISTER_FLOW_FAILURE_RESPONSE(500))
+    with raises(HTTPError, match="500 Server Error"):
+        integration.register_flow_with_saturn(flow=TEST_FLOW.copy())
+
+    failure_response = REGISTER_FLOW_FAILURE_RESPONSE(401)
+    failure_response["method_or_response"] = failure_response.pop("method")
+    responses.replace(**failure_response)
+    with raises(HTTPError, match="401 Client Error"):
+        integration.register_flow_with_saturn(flow=TEST_FLOW.copy())
 
 
 @responses.activate
 def test_get_saturn_details():
-    # Set up integration
-    project_name = "some-pr0ject"
-    test_image = "test-image:0.1"
-    responses.add(
-        responses.GET,
-        f"{os.environ['BASE_URL']}/api/current_image",
-        json={"image": test_image},
-        status=200,
-    )
-    integration = prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=project_name)
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    responses.add(**REGISTER_FLOW_RESPONSE())
 
-    # mock "registering" the flow
-    test_id = random.randint(1, 500)
-    integration._saturn_flow_id = test_id
+    test_token = str(uuid.uuid4())
+    test_registry = "8987.ecr.aws"
+    details = deepcopy(SATURN_DETAILS_RESPONSE)
+    details["json"].update({"registry_url": test_registry, "deployment_token": test_token})
+    responses.add(**details)
+
+    # Set up integration
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+    )
+    integration.register_flow_with_saturn(flow=TEST_FLOW.copy())
 
     # response with details for building storage
-    test_token = str(uuid.uuid4())
-    test_registry = "12345.ecr.aws"
-    details = SATURN_DETAILS_RESPONSE.copy()
-    details.update({"registry_url": test_registry, "deployment_token": test_token})
-    responses.add(
-        responses.GET,
-        f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{test_id}/saturn_details",
-        json=details,
-    )
     saturn_details = integration.saturn_details
     assert isinstance(saturn_details, dict)
     assert integration._saturn_details["host_aliases"] == []
@@ -170,38 +262,102 @@ def test_get_saturn_details():
 
 
 @responses.activate
-def test_build_environment():
+def test_get_saturn_details_raises_error_on_failure():
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    responses.add(**REGISTER_FLOW_RESPONSE())
+    responses.add(**SATURN_DETAILS_FAILURE_RESPONSE)
+
     # Set up integration
-    project_name = "some-pr0ject"
-    test_image = "test-image:0.1"
-    responses.add(
-        responses.GET,
-        f"{os.environ['BASE_URL']}/api/current_image",
-        json={"image": test_image},
-        status=200,
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
     )
-    integration = prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=project_name)
+    integration.register_flow_with_saturn(flow=TEST_FLOW.copy())
+    with raises(HTTPError, match="404 Client Error"):
+        integration.saturn_details
 
-    # mock "registering" the flow
-    test_id = random.randint(1, 500)
-    integration._saturn_flow_id = test_id
 
-    # mock saturn_details, since they're used by the job environment
-    responses.add(
-        responses.GET,
-        f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{test_id}/saturn_details",
-        json=SATURN_DETAILS_RESPONSE,
+@responses.activate
+def test_build_environment():
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    responses.add(**REGISTER_FLOW_RESPONSE())
+    responses.add(**SATURN_DETAILS_RESPONSE)
+
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
     )
-
-    @task
-    def hello_task():
-        logger = prefect.context.get("logger")
-        logger.info("hola")
-
-    project_name = "some-pr0ject"
-    flow_name = "plz-w0rk"
-    flow = Flow(flow_name, tasks=[hello_task])
+    flow = TEST_FLOW.copy()
+    integration.register_flow_with_saturn(flow=flow)
 
     flow = integration.add_environment(flow=flow)
     assert isinstance(flow.environment, KubernetesJobEnvironment)
     assert isinstance(flow.environment.executor, DaskExecutor)
+
+
+@responses.activate
+def test_add_storage():
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    responses.add(**REGISTER_FLOW_RESPONSE())
+    responses.add(**SATURN_DETAILS_RESPONSE)
+
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+    )
+    flow = TEST_FLOW.copy()
+    integration.register_flow_with_saturn(flow=flow)
+
+    assert flow.storage is None
+    flow = integration.add_storage(flow=flow)
+    assert isinstance(flow.storage, Docker)
+    assert flow.storage.base_image == TEST_IMAGE
+    assert flow.storage.image_name == integration.saturn_details["image_name"]
+    assert flow.storage.registry_url == TEST_REGISTRY_URL
+    assert flow.storage.prefect_directory == "/tmp"
+    assert "BASE_URL" in flow.storage.env_vars.keys()
+    assert "SATURN_TOKEN" in flow.storage.env_vars.keys()
+
+
+@responses.activate
+def test_add_storage_fails_if_flow_not_registerd():
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+    )
+    flow = TEST_FLOW.copy()
+    with raises(RuntimeError, match=prefect_saturn.Errors.NOT_REGISTERED):
+        integration.add_storage(flow=flow)
+
+
+@responses.activate
+def test_build_storage():
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    responses.add(**REGISTER_FLOW_RESPONSE())
+    responses.add(**SATURN_DETAILS_RESPONSE)
+    responses.add(**BUILD_STORAGE_RESPONSE)
+
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+    )
+    flow = TEST_FLOW.copy()
+    integration.register_flow_with_saturn(flow=flow)
+    flow = integration.add_storage(flow=flow)
+    res = integration.build_storage(flow)
+    assert res.status_code == 201
+
+
+@responses.activate
+def test_build_storage_fails_if_flow_not_registered():
+    responses.add(**CURRENT_IMAGE_RESPONSE)
+    responses.add(**REGISTER_FLOW_RESPONSE())
+    responses.add(**SATURN_DETAILS_RESPONSE)
+    responses.add(**BUILD_STORAGE_RESPONSE)
+
+    integration = prefect_saturn.PrefectCloudIntegration(
+        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+    )
+    flow = TEST_FLOW.copy()
+    integration.register_flow_with_saturn(flow=flow)
+    flow = integration.add_storage(flow=flow)
+
+    integration._saturn_flow_id = None
+    with raises(RuntimeError, match=prefect_saturn.Errors.NOT_REGISTERED):
+        integration.build_storage(flow)
