@@ -150,6 +150,7 @@ def test_get_saturn_details():
             "host_aliases": [],
             "deployment_token": test_token,
             "image_name": test_image,
+            "environment_variables": {},
         },
     )
     saturn_details = integration.saturn_details
@@ -158,6 +159,7 @@ def test_get_saturn_details():
     assert integration._saturn_details["deployment_token"] == test_token
     assert integration._saturn_details["image_name"] == test_image
     assert integration._saturn_details["registry_url"] == test_registry
+    assert integration._saturn_details["environment_variables"] == {}
 
 
 @responses.activate
