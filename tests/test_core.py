@@ -13,6 +13,17 @@ from prefect.environments.storage import Docker
 os.environ["SATURN_TOKEN"] = "placeholder-token"
 os.environ["BASE_URL"] = "http://placeholder-url"
 
+TEST_IMAGE = "test-image:0.1"
+TEST_DEPLOYMENT_TOKEN = str(uuid.uuid4())
+TEST_REGISTRY_URL = "12345.ecr.aws"
+SATURN_DETAILS_RESPONSE = {
+    "registry_url": TEST_REGISTRY_URL,
+    "host_aliases": [],
+    "deployment_token": TEST_DEPLOYMENT_TOKEN,
+    "image_name": TEST_IMAGE,
+    "environment_variables": {}
+}
+
 
 @responses.activate
 def test_initialize():
@@ -142,22 +153,18 @@ def test_get_saturn_details():
     # response with details for building storage
     test_token = str(uuid.uuid4())
     test_registry = "12345.ecr.aws"
+    details = SATURN_DETAILS_RESPONSE.copy()
+    details.update({"registry_url": test_registry, "deployment_token": test_token})
     responses.add(
         responses.GET,
         f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{test_id}/saturn_details",
-        json={
-            "registry_url": test_registry,
-            "host_aliases": [],
-            "deployment_token": test_token,
-            "image_name": test_image,
-            "environment_variables": {},
-        },
+        json=details,
     )
     saturn_details = integration.saturn_details
     assert isinstance(saturn_details, dict)
     assert integration._saturn_details["host_aliases"] == []
     assert integration._saturn_details["deployment_token"] == test_token
-    assert integration._saturn_details["image_name"] == test_image
+    assert integration._saturn_details["image_name"] == TEST_IMAGE
     assert integration._saturn_details["registry_url"] == test_registry
     assert integration._saturn_details["environment_variables"] == {}
 
@@ -180,17 +187,10 @@ def test_build_environment():
     integration._saturn_flow_id = test_id
 
     # mock saturn_details, since they're used by the job environment
-    test_token = str(uuid.uuid4())
-    test_registry = "12345.ecr.aws"
     responses.add(
         responses.GET,
         f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{test_id}/saturn_details",
-        json={
-            "registry_url": test_registry,
-            "host_aliases": [],
-            "deployment_token": test_token,
-            "image_name": test_image,
-        },
+        json=SATURN_DETAILS_RESPONSE,
     )
 
     @task
