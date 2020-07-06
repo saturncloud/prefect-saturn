@@ -213,10 +213,10 @@ class PrefectCloudIntegration:
         job_suffix = self._hash_flow(flow)[0:12]
         job_name = f"{job_name}-{job_suffix}"
         host_aliases = saturn_details["host_aliases"]
-        job_env = {
-            "BASE_URL": self._base_url,
-            "SATURN_TOKEN": saturn_details["deployment_token"],
-        }
+        job_env = saturn_details["environment_variables"]
+        job_env.update(
+            {"BASE_URL": self._base_url, "SATURN_TOKEN": saturn_details["deployment_token"]}
+        )
 
         # fill out template for the jobs that handle flow runs
         template_content = {
