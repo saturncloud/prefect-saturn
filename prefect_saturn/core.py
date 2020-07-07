@@ -239,6 +239,7 @@ class PrefectCloudIntegration:
                                 "env": [{"name": k, "value": v} for k, v in job_env.items()],
                             }
                         ],
+                        "nodeSelector": saturn_details["node_selector"],
                     },
                 }
             },
