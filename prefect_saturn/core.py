@@ -8,6 +8,7 @@ import os
 from typing import Any, Dict, Optional
 from requests import Session
 from requests.adapters import HTTPAdapter
+from requests.models import Response
 from requests.packages.urllib3.util.retry import Retry
 
 
@@ -183,7 +184,7 @@ class PrefectCloudIntegration:
         )
         return flow
 
-    def build_storage(self, flow: Flow):
+    def build_storage(self, flow: Flow) -> Response:
         """
         Actually build and push the storage
         """
@@ -238,6 +239,7 @@ class PrefectCloudIntegration:
                                 "env": [{"name": k, "value": v} for k, v in job_env.items()],
                             }
                         ],
+                        "nodeSelector": saturn_details["node_selector"],
                     },
                 }
             },
