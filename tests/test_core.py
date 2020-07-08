@@ -92,6 +92,7 @@ def REGISTER_FLOW_FAILURE_RESPONSE(status: int):
 # -------------------------------------------- #
 TEST_NODE_ROLE_KEY = "some-stuff/role"
 TEST_NODE_ROLE = "medium"
+TEST_ENV_SECRET_NAME = "prefect-some-n0ns3nse"
 SATURN_DETAILS_RESPONSE = {
     "method": responses.GET,
     "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{TEST_FLOW_ID}/saturn_details",
@@ -102,6 +103,7 @@ SATURN_DETAILS_RESPONSE = {
         "image_name": TEST_IMAGE,
         "environment_variables": {},
         "node_selector": {TEST_NODE_ROLE_KEY: TEST_NODE_ROLE},
+        "env_vars_secret_name": TEST_ENV_SECRET_NAME,
     },
     "status": 200,
 }
@@ -263,6 +265,7 @@ def test_get_saturn_details():
     assert integration._saturn_details["registry_url"] == test_registry
     assert integration._saturn_details["environment_variables"] == {}
     assert integration._saturn_details["node_selector"] == {TEST_NODE_ROLE_KEY: TEST_NODE_ROLE}
+    assert integration._saturn_details["env_vars_secret_name"] == TEST_ENV_SECRET_NAME
 
 
 @responses.activate

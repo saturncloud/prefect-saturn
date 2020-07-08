@@ -218,6 +218,7 @@ class PrefectCloudIntegration:
         job_env.update(
             {"BASE_URL": self._base_url, "SATURN_TOKEN": saturn_details["deployment_token"]}
         )
+        env_vars_secret_name = saturn_details["env_vars_secret_name"]
 
         # fill out template for the jobs that handle flow runs
         template_content = {
@@ -237,6 +238,7 @@ class PrefectCloudIntegration:
                                 "command": [],
                                 "args": [],
                                 "env": [{"name": k, "value": v} for k, v in job_env.items()],
+                                "envFrom": [{"secretRef": {"name": env_vars_secret_name}}],
                             }
                         ],
                         "nodeSelector": saturn_details["node_selector"],
