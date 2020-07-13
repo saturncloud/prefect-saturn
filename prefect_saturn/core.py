@@ -251,11 +251,9 @@ class PrefectCloudIntegration:
         with open(local_tmp_file, "w") as f:
             f.write(yaml.dump(template_content))
 
-        # TODO: add flow_id to "metadata" so the agent can use it
         flow.environment = KubernetesJobEnvironment(
             metadata={
                 "saturn_flow_id": self._saturn_flow_id,
-                "saturn_commit_hash": self.saturn_details["saturn_commit_hash"],
             },
             executor=DaskExecutor(
                 cluster_class="dask_saturn.SaturnCluster",
