@@ -156,13 +156,13 @@ def test_initialize_raises_error_on_failure():
 
 def test_initialize_raises_error_on_missing_saturn_token(monkeypatch):
     monkeypatch.delenv("SATURN_TOKEN")
-    with raises(RuntimeError, match=prefect_saturn.Errors.missing_env_var("SATURN_TOKEN")):
+    with raises(RuntimeError, match="environment variable SATURN_TOKEN not found"):
         prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME)
 
 
 def test_initialize_raises_error_on_missing_base_url(monkeypatch):
     monkeypatch.delenv("BASE_URL")
-    with raises(RuntimeError, match=prefect_saturn.Errors.missing_env_var("BASE_URL")):
+    with raises(RuntimeError, match="environment variable BASE_URL not found"):
         prefect_saturn.PrefectCloudIntegration(prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME)
 
 
