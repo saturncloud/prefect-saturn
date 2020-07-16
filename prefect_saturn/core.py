@@ -251,9 +251,7 @@ class PrefectCloudIntegration:
             f.write(yaml.dump(template_content))
 
         flow.environment = KubernetesJobEnvironment(
-            metadata={
-                "saturn_flow_id": self._saturn_flow_id,
-            },
+            metadata={"saturn_flow_id": self._saturn_flow_id,},
             executor=DaskExecutor(
                 cluster_class="dask_saturn.SaturnCluster",
                 cluster_kwargs=cluster_kwargs,
