@@ -178,7 +178,6 @@ class PrefectCloudIntegration:
             image_name=saturn_details["image_name"],
             image_tag=image_tag,
             registry_url=saturn_details["registry_url"],
-            python_dependencies=["git+https://github.com/saturncloud/dask-saturn@main"],
             prefect_directory="/tmp",
             env_vars={"SATURN_TOKEN": "placeholder-token", "BASE_URL": "placeholder-url"},
         )
@@ -252,6 +251,7 @@ class PrefectCloudIntegration:
             f.write(yaml.dump(template_content))
 
         flow.environment = KubernetesJobEnvironment(
+            metadata={"saturn_flow_id": self._saturn_flow_id},
             executor=DaskExecutor(
                 cluster_class="dask_saturn.SaturnCluster",
                 cluster_kwargs=cluster_kwargs,
