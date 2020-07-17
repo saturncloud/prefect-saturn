@@ -40,7 +40,7 @@ class PrefectCloudIntegration:
             project_name=PROJECT_NAME,
             build=False,
             labels=[
-                "s3-flow-storage"
+                "saturn-cloud"
             ]
         )
     """
