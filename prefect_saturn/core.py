@@ -13,10 +13,10 @@ from requests.packages.urllib3.util.retry import Retry
 
 
 import cloudpickle
-import prefect
 import yaml
 
 from prefect import Flow
+from prefect.client import Client
 from prefect.engine.executors import DaskExecutor
 from prefect.environments.storage import Docker
 from prefect.environments import KubernetesJobEnvironment
@@ -80,22 +80,27 @@ class PrefectCloudIntegration:
 
     def _hash_flow(self, flow: Flow) -> str:
         """
-        Given a prefect flow object, return a hash for its contents.
-        Currently uses sha256
+        In Prefect Cloud, all versions of a flow in a project are tied together
+        by a `flow_group_id`. This is the unique identifier used to store
+        flows in Saturn.
+
+        Since this library registers a flow with Saturn Cloud before registering
+        it with Prefect Cloud, it can't rely on the `flow_group_id` generated
+        by Prefect Cloud. Instead, this function hashes these pieces of
+        information that uniquely identify a flow group:
+
+        * project name
+        * flow name
+        * tenant id
+
+        The identifier produced here should uniquely identify all versions of a
+        flow with a given name, in a given Prefect Cloud project, for a given
+        Prefect Cloud tenant.
         """
-        # flow's hash shouldn't include storage or environment, since those
-        # have to be created after the flow was created
-        #     - tasks,
-        #     - flow name,
-        #     - Prefect Cloud project name
-        #     - prefect version
-        #     - saturn image
         identifying_content = [
-            flow.name,
             self.prefect_cloud_project_name,
-            flow.tasks,
-            prefect.__version__,
-            self._saturn_base_image,
+            flow.name,
+            Client()._active_tenant_id,  # pylint: disable=protected-access
         ]
         hasher = hashlib.sha256()
         hasher.update(cloudpickle.dumps(identifying_content))
