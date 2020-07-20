@@ -8,7 +8,7 @@ with open("VERSION", "r") as f:
     version = f.read().strip()
 
 install_requires = ["cloudpickle", "dask-saturn>=0.0.4", "prefect", "requests"]
-testing_deps = ["pytest"]
+testing_deps = ["pytest", "pytest-cov", "responses"]
 
 setup(
     name="prefect-saturn",
@@ -43,6 +43,6 @@ setup(
     python_requires=">=3.6",
     extras_require={"dev": install_requires + testing_deps},
     test_suite="tests",
-    test_require=["pytest", "pytest-cov", "responses"],
+    test_require=testing_deps,
     zip_safe=False,
 )
