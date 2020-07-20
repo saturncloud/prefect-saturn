@@ -39,8 +39,7 @@ jobs:
         if: matrix.task == 'unit-tests'
         shell: bash
         run: |
-          pip install cloudpickle==1.4.1
-          pip install --upgrade pytest pytest-cov responses
+          pip install --upgrade cloudpickle pytest pytest-cov responses
           make unit-tests
       - name: todo-checks
         if: matrix.task == 'todo-checks'

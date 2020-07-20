@@ -4,6 +4,7 @@ This module contains the user-facing API for ``prefect-saturn``.
 
 import hashlib
 import os
+import uuid
 
 from typing import Any, Dict, Optional
 from requests import Session
@@ -13,10 +14,10 @@ from requests.packages.urllib3.util.retry import Retry
 
 
 import cloudpickle
-import prefect
 import yaml
 
 from prefect import Flow
+from prefect.client import Client
 from prefect.engine.executors import DaskExecutor
 from prefect.environments.storage import Docker
 from prefect.environments import KubernetesJobEnvironment
@@ -80,22 +81,27 @@ class PrefectCloudIntegration:
 
     def _hash_flow(self, flow: Flow) -> str:
         """
-        Given a prefect flow object, return a hash for its contents.
-        Currently uses sha256
+        In Prefect Cloud, all versions of a flow in a project are tied together
+        by a `flow_group_id`. This is the unique identifier used to store
+        flows in Saturn.
+
+        Since this library registers a flow with Saturn Cloud before registering
+        it with Prefect Cloud, it can't rely on the `flow_group_id` generated
+        by Prefect Cloud. Instead, this function hashes these pieces of
+        information that uniquely identify a flow group:
+
+        * project name
+        * flow name
+        * tenant id
+
+        The identifier produced here should uniquely identify all versions of a
+        flow with a given name, in a given Prefect Cloud project, for a given
+        Prefect Cloud tenant.
         """
-        # flow's hash shouldn't include storage or environment, since those
-        # have to be created after the flow was created
-        #     - tasks,
-        #     - flow name,
-        #     - Prefect Cloud project name
-        #     - prefect version
-        #     - saturn image
         identifying_content = [
-            flow.name,
             self.prefect_cloud_project_name,
-            flow.tasks,
-            prefect.__version__,
-            self._saturn_base_image,
+            flow.name,
+            Client()._active_tenant_id,  # pylint: disable=protected-access
         ]
         hasher = hashlib.sha256()
         hasher.update(cloudpickle.dumps(identifying_content))
@@ -163,11 +169,14 @@ class PrefectCloudIntegration:
 
     def add_storage(self, flow: Flow) -> Flow:
         """
-        Get a Docker Storage object with Saturn-y
-        details.
+        Create a Docker Storage object with Saturn-y details and set
+        it on `flow.storage`.
+
+        This method sets the `image_tag` to a random string to avoid conflicts.
+        The image name is generated in Saturn.
         """
         saturn_details = self.saturn_details
-        image_tag = self._hash_flow(flow)[0:12]
+        image_tag = str(uuid.uuid4())
         # NOTE: SATURN_TOKEN and BASE_URL have to be set to be able
         #       to load the flow. Those variables will be overridden by
         #       Kubernetes in all the places where it matters, and values
@@ -209,9 +218,11 @@ class PrefectCloudIntegration:
         cluster_kwargs = cluster_kwargs or {"n_workers": 1}
         adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
         saturn_details = self.saturn_details
-        job_name = f"pfct-{flow.name}"
-        job_suffix = self._hash_flow(flow)[0:12]
-        job_name = f"{job_name}-{job_suffix}"
+
+        # setting unique_job_name=True on the environment is enough to guarantee
+        # uniqueness for this job name
+        flow_hash = self._hash_flow(flow)
+        job_name = f"pct-{flow_hash}"
         host_aliases = saturn_details["host_aliases"]
         job_env = saturn_details["environment_variables"]
         job_env.update(
@@ -258,5 +269,6 @@ class PrefectCloudIntegration:
                 adapt_kwargs=adapt_kwargs,
             ),
             job_spec_file=local_tmp_file,
+            unique_job_name=True,
         )
         return flow
