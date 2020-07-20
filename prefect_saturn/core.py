@@ -4,6 +4,7 @@ This module contains the user-facing API for ``prefect-saturn``.
 
 import hashlib
 import os
+import uuid
 
 from typing import Any, Dict, Optional
 from requests import Session
@@ -168,11 +169,14 @@ class PrefectCloudIntegration:
 
     def add_storage(self, flow: Flow) -> Flow:
         """
-        Get a Docker Storage object with Saturn-y
-        details.
+        Create a Docker Storage object with Saturn-y details and set
+        it on `flow.storage`.
+
+        This method sets the `image_tag` to a random string to avoid conflicts.
+        The image name is generated in Saturn.
         """
         saturn_details = self.saturn_details
-        image_tag = self._hash_flow(flow)[0:12]
+        image_tag = str(uuid.uuid4())
         # NOTE: SATURN_TOKEN and BASE_URL have to be set to be able
         #       to load the flow. Those variables will be overridden by
         #       Kubernetes in all the places where it matters, and values
