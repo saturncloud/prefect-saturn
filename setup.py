@@ -14,7 +14,7 @@ setup(
     name="prefect-saturn",
     version=version,
     maintainer="Saturn Cloud Developers",
-    maintainer_email="dev@saturncloud.io",
+    maintainer_email="open-source@saturncloud.io",
     license="BSD 3-clause",
     classifiers=[
         "Development Status :: 3 - Alpha",
