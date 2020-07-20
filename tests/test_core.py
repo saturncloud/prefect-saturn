@@ -347,6 +347,7 @@ def test_build_environment():
         flow = integration.add_environment(flow=flow)
         assert isinstance(flow.environment, KubernetesJobEnvironment)
         assert isinstance(flow.environment.executor, DaskExecutor)
+        assert flow.environment.unique_job_name is True
 
 
 @responses.activate

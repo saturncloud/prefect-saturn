@@ -214,9 +214,11 @@ class PrefectCloudIntegration:
         cluster_kwargs = cluster_kwargs or {"n_workers": 1}
         adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
         saturn_details = self.saturn_details
-        job_name = f"pfct-{flow.name}"
-        job_suffix = self._hash_flow(flow)[0:12]
-        job_name = f"{job_name}-{job_suffix}"
+
+        # setting unique_job_name=True on the environment is enough to guarantee
+        # uniqueness for this job name
+        flow_hash = self._hash_flow(flow)
+        job_name = f"pct-{flow_hash}"
         host_aliases = saturn_details["host_aliases"]
         job_env = saturn_details["environment_variables"]
         job_env.update(
@@ -263,5 +265,6 @@ class PrefectCloudIntegration:
                 adapt_kwargs=adapt_kwargs,
             ),
             job_spec_file=local_tmp_file,
+            unique_job_name=True,
         )
         return flow
