@@ -217,20 +217,13 @@ class PrefectCloudIntegration:
         """
         cluster_kwargs = cluster_kwargs or {"n_workers": 1}
         adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
-        saturn_details = self.saturn_details
 
         # setting unique_job_name=True on the environment is enough to guarantee
         # uniqueness for this job name
         flow_hash = self._hash_flow(flow)
         job_name = f"pct-{flow_hash}"
-        host_aliases = saturn_details["host_aliases"]
-        job_env = saturn_details["environment_variables"]
-        job_env.update(
-            {"BASE_URL": self._base_url, "SATURN_TOKEN": saturn_details["deployment_token"]}
-        )
-        env_vars_secret_name = saturn_details["env_vars_secret_name"]
 
-        # fill out template for the jobs that handle flow runs
+        # template for the jobs that handle flow runs
         template_content = {
             "apiVersion": "batch/v1",
             "kind": "Job",
@@ -240,26 +233,29 @@ class PrefectCloudIntegration:
                     "metadata": {"labels": {"identifier": ""}},
                     "spec": {
                         "restartPolicy": "Never",
-                        "hostAliases": host_aliases,
                         "containers": [
                             {
                                 "name": "flow-container",
                                 "image": "",
                                 "command": [],
                                 "args": [],
-                                "env": [{"name": k, "value": v} for k, v in job_env.items()],
-                                "envFrom": [{"secretRef": {"name": env_vars_secret_name}}],
+                                "env": [{"name": "BASE_URL", "value": self._base_url}],
                             }
                         ],
-                        "nodeSelector": saturn_details["node_selector"],
                     },
                 }
             },
         }
 
+        # get complete job spec with Saturn details from Atlas
+        url = f"{self._saturn_base_url}/api/prefect_cloud/flows/{self._saturn_flow_id}/run_job_spec"
+        response = self._session.post(url=url, json={"job_spec": template_content},)
+        response.raise_for_status()
+        job_dict = response.json()
+
         local_tmp_file = "/tmp/prefect-flow-run.yaml"
         with open(local_tmp_file, "w") as f:
-            f.write(yaml.dump(template_content))
+            f.write(yaml.dump(job_dict))
 
         flow.environment = KubernetesJobEnvironment(
             metadata={"saturn_flow_id": self._saturn_flow_id},
