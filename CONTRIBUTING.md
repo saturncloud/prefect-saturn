@@ -66,6 +66,6 @@ This section describes how to release a new version of `prefect-saturn` to PyPi.
 
 1. Open a new pull request which bumps the version in `VERSION`. Merge that PR.
 2. [Create a new release](https://github.com/saturncloud/prefect-saturn/releases/new)
-    - the tag should be a version number, like `0.0.1`
+    - the tag should be a version number, like `v0.0.1`
     - choose the target from "recent commits", and select the most recent commit on `main`
 3. Once this release is created, a GitHub Actions build will automatically start. That build publishes a release to PyPi.

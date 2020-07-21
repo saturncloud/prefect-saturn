@@ -32,4 +32,4 @@ jobs:
       with:
         # Password is set in GitHub UI to an API secret for pypi
         user: __token__
-        password: ${{ secrets.pypi_password }}
+        password: ${{ secrets.pypi_api_key }}

@@ -32,7 +32,7 @@ setup(
     description="Client library for running Prefect Cloud flows in Saturn Cloud",
     long_description=readme,
     long_description_content_type="text/markdown",
-    url="hhttps://github.com/saturncloud/prefect-saturn",
+    url="https://saturncloud.io/",
     project_urls={
         "Documentation": "http://docs.saturncloud.io",
         "Source": "https://github.com/saturncloud/prefect-saturn",
