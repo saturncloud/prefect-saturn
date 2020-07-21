@@ -219,8 +219,8 @@ class PrefectCloudIntegration:
         adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
 
         # get job spec with Saturn details from Atlas
-        url = f"{self._saturn_base_url}/api/prefect_cloud/flows/{self._saturn_flow_id}/run_job_spec"
-        response = self._session.get(url=url)
+        url = f"{self._base_url}/api/prefect_cloud/flows/{self._saturn_flow_id}/run_job_spec"
+        response = self._session.get(url=url,)
         response.raise_for_status()
         job_dict = response.json()
 
