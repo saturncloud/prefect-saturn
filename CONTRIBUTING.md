@@ -5,6 +5,7 @@ This document contains details on contributing to `prefect-saturn`.
 * [Documentation](#documentation)
 * [Installation](#installation)
 * [Testing](#testing)
+* [Releasing](#releasing)
 
 ## Documentation
 
@@ -58,3 +59,13 @@ The `unit-tests` recipe in `Makefile` includes a minimum code coverage threshold
 `prefect-saturn`'s unit tests mock out its interactions with the rest of Saturn Cloud. Integration tests that test those interactions contain some sensitive information, and are stored in a private repository.
 
 If you experience issues using `prefect-saturn` and Saturn Cloud, please see [the Saturn documentation](#documentation) or contact us at by following the `Contact Us` navigation at https://www.saturncloud.io/s.
+
+## Releasing
+
+This section describes how to release a new version of `prefect-saturn` to PyPi. It is intended only for maintainers.
+
+1. Open a new pull request which bumps the version in `VERSION`. Merge that PR.
+2. [Create a new release](https://github.com/saturncloud/prefect-saturn/releases/new)
+    - the tag should be a version number, like `0.0.1`
+    - choose the target from "recent commits", and select the most recent commit on `main`
+3. Once this release is created, a GitHub Actions build will automatically start. That build publishes a release to PyPi.
