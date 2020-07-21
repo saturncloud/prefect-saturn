@@ -218,38 +218,9 @@ class PrefectCloudIntegration:
         cluster_kwargs = cluster_kwargs or {"n_workers": 1}
         adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
 
-        # setting unique_job_name=True on the environment is enough to guarantee
-        # uniqueness for this job name
-        flow_hash = self._hash_flow(flow)
-        job_name = f"pct-{flow_hash}"
-
-        # template for the jobs that handle flow runs
-        template_content = {
-            "apiVersion": "batch/v1",
-            "kind": "Job",
-            "metadata": {"name": job_name, "labels": {"identifier": "", "flow_run_id": ""}},
-            "spec": {
-                "template": {
-                    "metadata": {"labels": {"identifier": ""}},
-                    "spec": {
-                        "restartPolicy": "Never",
-                        "containers": [
-                            {
-                                "name": "flow-container",
-                                "image": "",
-                                "command": [],
-                                "args": [],
-                                "env": [{"name": "BASE_URL", "value": self._base_url}],
-                            }
-                        ],
-                    },
-                }
-            },
-        }
-
-        # get complete job spec with Saturn details from Atlas
+        # get job spec with Saturn details from Atlas
         url = f"{self._saturn_base_url}/api/prefect_cloud/flows/{self._saturn_flow_id}/run_job_spec"
-        response = self._session.post(url=url, json={"job_spec": template_content},)
+        response = self._session.get(url=url)
         response.raise_for_status()
         job_dict = response.json()
 
