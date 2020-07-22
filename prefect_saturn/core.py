@@ -189,7 +189,7 @@ class PrefectCloudIntegration:
             registry_url=saturn_details["registry_url"],
             prefect_directory="/tmp",
             env_vars={"SATURN_TOKEN": "placeholder-token", "BASE_URL": "placeholder-url"},
-            python_dependencies=["kubernetes"]
+            python_dependencies=["kubernetes"],
         )
         return flow
 
