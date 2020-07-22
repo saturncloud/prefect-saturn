@@ -211,7 +211,7 @@ class PrefectCloudIntegration:
         flow: Flow,
         cluster_kwargs: Optional[Dict[str, Any]] = None,
         adapt_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> KubernetesJobEnvironment:
+    ) -> Flow:
         """
         Get an environment that customizes the execution of a Prefect flow run.
         """
