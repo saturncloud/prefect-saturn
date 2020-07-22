@@ -12,15 +12,13 @@ from requests.adapters import HTTPAdapter
 from requests.models import Response
 from requests.packages.urllib3.util.retry import Retry
 
-
 import cloudpickle
-import yaml
-
 from prefect import Flow
 from prefect.client import Client
 from prefect.engine.executors import DaskExecutor
 from prefect.environments.storage import Docker
 from prefect.environments import KubernetesJobEnvironment
+import yaml
 
 from .messages import Errors
 
