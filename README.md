@@ -4,7 +4,6 @@
 
 `prefect-saturn` is a Python package that makes it easy to run [Prefect Cloud](https://www.prefect.io/cloud/) flows on a Dask cluster with [Saturn Cloud](https://www.saturncloud.io/).
 
-
 ## Getting Started
 
 `prefect-saturn` is available on PyPi.

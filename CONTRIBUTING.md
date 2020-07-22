@@ -21,6 +21,8 @@ To develop `prefect-saturn`, install it locally with the following command
 python setup.py develop
 ```
 
+NOTE: If you have previously `pip install`'d `prefect-saturn`, some steps in this project might not work for you. Run `pip uninstall -y prefect-saturn` to remove any `pip install`'d versions.
+
 ## Testing
 
 Every commit to this repository is tested automatically using continuous integration (CI). All CI checks must pass to for a pull request to be accepted.
