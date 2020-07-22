@@ -2,7 +2,7 @@
 
 ![GitHub Actions](https://github.com/saturncloud/prefect-saturn/workflows/GitHub%20Actions/badge.svg) [![PyPI Version](https://img.shields.io/pypi/v/prefect-saturn.svg)](https://pypi.org/project/prefect-saturn)
 
-`prefect-saturn` is a Python package that makes it easy to run Prefect Cloud flows on a Dask cluster with Saturn Cloud.
+`prefect-saturn` is a Python package that makes it easy to run [Prefect Cloud](https://www.prefect.io/cloud/) flows on a Dask cluster with [Saturn Cloud](https://www.saturncloud.io/).
 
 
 ## Getting Started
