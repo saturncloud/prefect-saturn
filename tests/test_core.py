@@ -4,6 +4,7 @@ import prefect_saturn
 import random
 import responses
 import uuid
+import yaml
 
 from copy import deepcopy
 from typing import Any, Dict, Optional
@@ -123,6 +124,23 @@ BUILD_STORAGE_RESPONSE = {
     "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows/{TEST_FLOW_ID}/store",
     "status": 201,
 }
+
+
+# ------------------------------------------ #
+# /api/prefect_cloud/flows/{id}/run_job_spec #
+# ------------------------------------------ #
+def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int) -> Dict[str, Any]:
+    run_job_spec_file = os.path.join(os.path.dirname(__file__), "run-job-spec.yaml")
+    with open(run_job_spec_file, "r") as file:
+        run_job_spec = yaml.load(file, Loader=yaml.FullLoader)
+
+    base_url = os.environ["BASE_URL"]
+    return {
+        "method": responses.GET,
+        "url": f"{base_url}/api/prefect_cloud/flows/{TEST_FLOW_ID}/run_job_spec",
+        "json": run_job_spec,
+        "status": status,
+    }
 
 
 class MockClient:
@@ -337,6 +355,7 @@ def test_build_environment():
         responses.add(**CURRENT_IMAGE_RESPONSE)
         responses.add(**REGISTER_FLOW_RESPONSE())
         responses.add(**SATURN_DETAILS_RESPONSE)
+        responses.add(**REGISTER_RUN_JOB_SPEC_RESPONSE(200))
 
         integration = prefect_saturn.PrefectCloudIntegration(
             prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
@@ -370,6 +389,7 @@ def test_add_storage():
         assert flow.storage.image_name == integration.saturn_details["image_name"]
         assert flow.storage.registry_url == TEST_REGISTRY_URL
         assert flow.storage.prefect_directory == "/tmp"
+        assert "kubernetes" in flow.storage.python_dependencies
         assert "BASE_URL" in flow.storage.env_vars.keys()
         assert "SATURN_TOKEN" in flow.storage.env_vars.keys()
 
