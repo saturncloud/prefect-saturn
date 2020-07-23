@@ -389,6 +389,7 @@ def test_add_storage():
         assert flow.storage.image_name == integration.saturn_details["image_name"]
         assert flow.storage.registry_url == TEST_REGISTRY_URL
         assert flow.storage.prefect_directory == "/tmp"
+        assert "kubernetes" in flow.storage.python_dependencies
         assert "BASE_URL" in flow.storage.env_vars.keys()
         assert "SATURN_TOKEN" in flow.storage.env_vars.keys()
 
