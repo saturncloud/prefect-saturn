@@ -75,7 +75,7 @@ class PrefectCloudIntegration:
         res.raise_for_status()
         self._saturn_base_image = res.json()["image"]
 
-        self._saturn_details: Optional[Dict[str, Any]] = None
+        self._storage_details: Optional[Dict[str, Any]] = None
 
     def _hash_flow(self, flow: Flow) -> str:
         """
@@ -140,29 +140,27 @@ class PrefectCloudIntegration:
         return True
 
     @property
-    def saturn_details(self) -> Dict[str, Any]:
+    def storage_details(self) -> Dict[str, Any]:
         """
-        Information from Atlas used to build the storage and environment objects.
+        Information from Atlas used to build flow storage.
         This method can only be run for flows which have already been registered
         with ``register_flow_with_saturn()``.
 
-        updates ``self._saturn_details`` with the following Saturn-specific details for this flow:
+        updates ``self._storage_details`` with the following Saturn-specific details for this flow:
             - registry_url: the container registry to push flow storage too, since
                 Saturn currently uses ``Docker`` storage from Prefect
-            - host_aliases: a bit of kubernetes networking stuff you can ignore
-            - deployment_token: a long-lived token that uniquely identifies this flow
             - image_name: name for the Docker image that will store the flow
         """
         if self._saturn_flow_id is None:
             raise RuntimeError(Errors.NOT_REGISTERED)
 
         res = self._session.get(
-            url=f"{self._base_url}api/prefect_cloud/flows/{self._saturn_flow_id}/saturn_details",
+            url=f"{self._base_url}api/prefect_cloud/flows/{self._saturn_flow_id}/storage_details",
             headers={"Content-Type": "application/json"},
         )
         res.raise_for_status()
         response_json = res.json()
-        self._saturn_details = response_json
+        self._storage_details = response_json
         return response_json
 
     def add_storage(self, flow: Flow) -> Flow:
@@ -173,7 +171,7 @@ class PrefectCloudIntegration:
         This method sets the `image_tag` to a random string to avoid conflicts.
         The image name is generated in Saturn.
         """
-        saturn_details = self.saturn_details
+        storage_details = self.storage_details
         image_tag = str(uuid.uuid4())
         # NOTE: SATURN_TOKEN and BASE_URL have to be set to be able
         #       to load the flow. Those variables will be overridden by
@@ -182,12 +180,13 @@ class PrefectCloudIntegration:
         #       https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container
         flow.storage = Docker(
             base_image=self._saturn_base_image,
-            image_name=saturn_details["image_name"],
+            image_name=storage_details["image_name"],
             image_tag=image_tag,
-            registry_url=saturn_details["registry_url"],
+            registry_url=storage_details["registry_url"],
             prefect_directory="/tmp",
             env_vars={"SATURN_TOKEN": "placeholder-token", "BASE_URL": "placeholder-url"},
             python_dependencies=["kubernetes"],
+            ignore_healthchecks=True,
         )
         return flow
 
@@ -227,7 +226,7 @@ class PrefectCloudIntegration:
         with open(local_tmp_file, "w") as f:
             f.write(yaml.dump(job_dict))
 
-        flow.environment = KubernetesJobEnvironment(
+        k8s_environment = KubernetesJobEnvironment(
             metadata={"saturn_flow_id": self._saturn_flow_id},
             executor=DaskExecutor(
                 cluster_class="dask_saturn.SaturnCluster",
@@ -237,4 +236,19 @@ class PrefectCloudIntegration:
             job_spec_file=local_tmp_file,
             unique_job_name=True,
         )
+
+        # patch command and args to run the user's start script
+        new_command = ["/bin/bash", "-ec"]
+        k8s_environment._job_spec["spec"]["template"]["spec"]["containers"][0][
+            "command"
+        ] = new_command
+
+        args_from_prefect = k8s_environment._job_spec["spec"]["template"]["spec"]["containers"][
+            0
+        ].get("args", [])
+        args_from_prefect = " ".join(args_from_prefect)
+        new_args = f"source /home/jovyan/.saturn/start.sh; {args_from_prefect}"
+        k8s_environment._job_spec["spec"]["template"]["spec"]["containers"][0]["args"] = [new_args]
+
+        flow.environment = k8s_environment
         return flow
