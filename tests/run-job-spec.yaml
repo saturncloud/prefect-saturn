@@ -1,0 +1,15 @@
+# test output from /api/prefect_cloud/flows/{id}/run_job_spec in Atlas
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "pct-df035c2c"
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: flow-container
+          image: ""
+          command: []
+          args: []
