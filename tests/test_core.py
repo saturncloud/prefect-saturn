@@ -129,7 +129,7 @@ BUILD_STORAGE_RESPONSE = {
 # ------------------------------------------ #
 # /api/prefect_cloud/flows/{id}/run_job_spec #
 # ------------------------------------------ #
-def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int) -> Dict[str, Any]:
+def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int, flow_id: int = TEST_FLOW_ID) -> Dict[str, Any]:
     run_job_spec_file = os.path.join(os.path.dirname(__file__), "run-job-spec.yaml")
     with open(run_job_spec_file, "r") as file:
         run_job_spec = yaml.load(file, Loader=yaml.FullLoader)
@@ -137,7 +137,7 @@ def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int) -> Dict[str, Any]:
     base_url = os.environ["BASE_URL"]
     return {
         "method": responses.GET,
-        "url": f"{base_url}/api/prefect_cloud/flows/{TEST_FLOW_ID}/run_job_spec",
+        "url": f"{base_url}/api/prefect_cloud/flows/{flow_id}/run_job_spec",
         "json": run_job_spec,
         "status": status,
     }
@@ -442,3 +442,34 @@ def test_build_storage_fails_if_flow_not_registered():
         integration._saturn_flow_id = None
         with raises(RuntimeError, match=prefect_saturn.Errors.NOT_REGISTERED):
             integration.build_storage(flow)
+
+
+@responses.activate
+def test_add_environment_fails_if_flow_not_registered():
+    with patch("prefect_saturn.core.Client", new=MockClient):
+        responses.add(**CURRENT_IMAGE_RESPONSE)
+
+        integration = prefect_saturn.PrefectCloudIntegration(
+            prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+        )
+        flow = TEST_FLOW.copy()
+
+        with raises(RuntimeError, match=prefect_saturn.Errors.NOT_REGISTERED):
+            integration.add_environment(flow=flow)
+
+
+@responses.activate
+def test_add_environment_fails_if_id_not_recognized():
+    with patch("prefect_saturn.core.Client", new=MockClient):
+        responses.add(**CURRENT_IMAGE_RESPONSE)
+        responses.add(**REGISTER_FLOW_RESPONSE(45))
+        responses.add(**REGISTER_RUN_JOB_SPEC_RESPONSE(404, flow_id=45))
+
+        integration = prefect_saturn.PrefectCloudIntegration(
+            prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+        )
+        flow = TEST_FLOW.copy()
+        integration.register_flow_with_saturn(flow=flow)
+
+        with raises(HTTPError, match="404 Client Error"):
+            integration.add_environment(flow=flow)
