@@ -217,6 +217,9 @@ class PrefectCloudIntegration:
         cluster_kwargs = cluster_kwargs or {"n_workers": 1}
         adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
 
+        if self._saturn_flow_id is None:
+            raise RuntimeError(Errors.NOT_REGISTERED)
+
         # get job spec with Saturn details from Atlas
         url = f"{self._base_url}api/prefect_cloud/flows/{self._saturn_flow_id}/run_job_spec"
         response = self._session.get(url=url)
