@@ -21,7 +21,8 @@ lint:
 	#   * C0330: wrong hanging indent before block
 	#   * E0401: unable to import
 	#   * R0903: too few public methods
-	pylint --disable=C0103,C0301,C0330,E0401,R0903 prefect_saturn/
+	#   * W0212: access to protected member
+	pylint --disable=C0103,C0301,C0330,E0401,R0903,W0212 prefect_saturn/
 
 .PHONY: unit-tests
 unit-tests:

@@ -40,7 +40,7 @@ setup(
     },
     packages=find_packages(),
     install_requires=install_requires,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     extras_require={"dev": install_requires + testing_deps},
     test_suite="tests",
     test_require=testing_deps,
