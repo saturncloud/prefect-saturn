@@ -7,7 +7,8 @@ with open("README.md", "r") as f:
 with open("VERSION", "r") as f:
     version = f.read().strip()
 
-install_requires = ["cloudpickle", "dask-saturn>=0.0.4", "prefect", "requests"]
+# prefect has to be 0.13.0 or newer to get Webhook storage
+install_requires = ["cloudpickle", "dask-saturn>=0.0.4", "prefect>0.13.0", "requests"]
 testing_deps = ["pytest", "pytest-cov", "responses"]
 
 setup(

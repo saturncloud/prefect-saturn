@@ -6,6 +6,35 @@
 
 ## Getting Started
 
+```python
+import prefect
+from prefect import Flow, task
+from prefect_saturn import PrefectCloudIntegration
+
+
+@task
+def hello_task():
+    logger = prefect.context.get("logger")
+    logger.info("hello prefect-saturn")
+
+
+flow = Flow("sample-flow", tasks=[hello_task])
+
+project_name = "sample-project"
+integration = PrefectCloudIntegration(
+    prefect_cloud_project_name=project_name
+)
+flow = integration.register_flow_with_saturn(flow)
+
+flow.register(
+    project_name=project_name,
+    build=False,
+    labels=["saturn-cloud"]
+)
+```
+
+## Installation
+
 `prefect-saturn` is available on PyPi.
 
 ```shell
