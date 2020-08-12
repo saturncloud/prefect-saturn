@@ -8,7 +8,6 @@ import os
 from typing import Any, Dict, Optional
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.models import Response
 from requests.packages.urllib3.util.retry import Retry
 
 import cloudpickle
@@ -209,15 +208,19 @@ class PrefectCloudIntegration:
         )
         flow.environment = environment
 
-        flow.storage.add_flow(flow)
-
         return flow
 
     def _get_storage(self) -> Webhook:
         """
         Create a `Webhook` storage object with Saturn-y details.
         """
-        url = "${BASE_URL}api/prefect_cloud/flows/" + self.flow_id + "/flow_content?flow_version_id=" + self.flow_version_id
+        url = (
+            "${BASE_URL}api/prefect_cloud/flows/"
+            + self.flow_id
+            + "/"
+            + self.flow_version_id
+            + "/content"
+        )
         storage = Webhook(
             build_request_kwargs={
                 "url": url,

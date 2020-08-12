@@ -73,18 +73,20 @@ def BUILD_STORAGE_RESPONSE(
         "method": responses.POST,
         "url": (
             f"{os.environ['BASE_URL']}api/prefect_cloud/flows"
-            f"/{flow_id}/flow_content?flow_version_id={flow_version_id}"
+            f"/{flow_id}/{flow_version_id}/content"
         ),
         "status": 201,
     }
 
 
-def BUILD_STORAGE_FAILURE_RESPONSE(status: int, flow_id: str = TEST_FLOW_ID, flow_version_id: str = TEST_FLOW_VERSION_ID) -> Dict[str, Any]:
+def BUILD_STORAGE_FAILURE_RESPONSE(
+    status: int, flow_id: str = TEST_FLOW_ID, flow_version_id: str = TEST_FLOW_VERSION_ID
+) -> Dict[str, Any]:
     return {
         "method": responses.POST,
         "url": (
             f"{os.environ['BASE_URL']}api/prefect_cloud/flows"
-            f"/{flow_id}/flow_content?flow_version_id={flow_version_id}"
+            f"/{flow_id}/{flow_version_id}/content"
         ),
         "status": status,
     }
@@ -280,6 +282,7 @@ def test_store_flow_fails_if_flow_not_registered():
         flow = TEST_FLOW.copy()
         flow = integration.register_flow_with_saturn(flow=flow)
         with raises(HTTPError, match="Not Found for url"):
+            flow.storage.add_flow(flow)
             flow.storage.build()
 
 
@@ -296,6 +299,7 @@ def test_store_flow_fails_if_validation_fails():
         flow = TEST_FLOW.copy()
         flow = integration.register_flow_with_saturn(flow=flow)
         with raises(HTTPError, match="Client Error"):
+            flow.storage.add_flow(flow)
             flow.storage.build()
 
 
