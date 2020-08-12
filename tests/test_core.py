@@ -17,7 +17,7 @@ from requests.exceptions import HTTPError
 from unittest.mock import patch
 
 os.environ["SATURN_TOKEN"] = "placeholder-token"
-os.environ["BASE_URL"] = "http://placeholder-url"
+os.environ["BASE_URL"] = "http://placeholder-url/"
 
 TEST_FLOW_ID = str(random.randint(1, 500))
 TEST_FLOW_VERSION_ID = str(uuid.uuid4())
@@ -45,7 +45,7 @@ def REGISTER_FLOW_RESPONSE(
 ) -> Dict[str, Any]:
     return {
         "method": responses.PUT,
-        "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows",
+        "url": f"{os.environ['BASE_URL']}api/prefect_cloud/flows",
         "json": {
             "id": flow_id or TEST_FLOW_ID,
             "flow_version_id": TEST_FLOW_VERSION_ID,
@@ -58,7 +58,7 @@ def REGISTER_FLOW_RESPONSE(
 def REGISTER_FLOW_FAILURE_RESPONSE(status: int) -> Dict[str, Any]:
     return {
         "method": responses.PUT,
-        "url": f"{os.environ['BASE_URL']}/api/prefect_cloud/flows",
+        "url": f"{os.environ['BASE_URL']}api/prefect_cloud/flows",
         "status": status,
     }
 
@@ -72,10 +72,21 @@ def BUILD_STORAGE_RESPONSE(
     return {
         "method": responses.POST,
         "url": (
-            f"{os.environ['BASE_URL']}/api/prefect_cloud/flows"
+            f"{os.environ['BASE_URL']}api/prefect_cloud/flows"
             f"/{flow_id}/flow_content?flow_version_id={flow_version_id}"
         ),
         "status": 201,
+    }
+
+
+def BUILD_STORAGE_FAILURE_RESPONSE(status: int, flow_id: str = TEST_FLOW_ID, flow_version_id: str = TEST_FLOW_VERSION_ID) -> Dict[str, Any]:
+    return {
+        "method": responses.POST,
+        "url": (
+            f"{os.environ['BASE_URL']}api/prefect_cloud/flows"
+            f"/{flow_id}/flow_content?flow_version_id={flow_version_id}"
+        ),
+        "status": status,
     }
 
 
@@ -90,7 +101,7 @@ def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int, flow_id: str = TEST_FLOW_ID) -> 
     base_url = os.environ["BASE_URL"]
     return {
         "method": responses.GET,
-        "url": f"{base_url}/api/prefect_cloud/flows/{flow_id}/run_job_spec",
+        "url": f"{base_url}api/prefect_cloud/flows/{flow_id}/run_job_spec",
         "json": run_job_spec,
         "status": status,
     }
@@ -113,8 +124,17 @@ def test_initialize():
     assert integration._saturn_flow_id is None
     assert integration._saturn_flow_version_id is None
 
-    # __init__() should add this trailing slash if it's necessary
-    assert integration._base_url == os.environ["BASE_URL"] + "/"
+
+def test_initialize_adds_slash_to_base_url(monkeypatch):
+    monkeypatch.setenv("BASE_URL", "http://abc")
+    integration = prefect_saturn.PrefectCloudIntegration("x")
+    assert integration._base_url == "http://abc/"
+
+
+def test_initialize_does_not_add_double_slash_to_base_url(monkeypatch):
+    monkeypatch.setenv("BASE_URL", "http://abc/")
+    integration = prefect_saturn.PrefectCloudIntegration("x")
+    assert integration._base_url == "http://abc/"
 
 
 def test_initialize_raises_error_on_missing_saturn_token(monkeypatch):
@@ -247,13 +267,36 @@ def test_get_storage_fails_if_flow_not_registerd():
         integration._get_storage()
 
 
+@responses.activate
 def test_store_flow_fails_if_flow_not_registered():
-    integration = prefect_saturn.PrefectCloudIntegration(
-        prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
-    )
-    flow = TEST_FLOW.copy()
-    with raises(RuntimeError, match=prefect_saturn.Errors.NOT_REGISTERED):
-        integration._store_flow(flow)
+    with patch("prefect_saturn.core.Client", new=MockClient):
+        responses.add(**REGISTER_FLOW_RESPONSE())
+        responses.add(**BUILD_STORAGE_FAILURE_RESPONSE(404))
+        responses.add(**REGISTER_RUN_JOB_SPEC_RESPONSE(200))
+
+        integration = prefect_saturn.PrefectCloudIntegration(
+            prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+        )
+        flow = TEST_FLOW.copy()
+        flow = integration.register_flow_with_saturn(flow=flow)
+        with raises(HTTPError, match="Not Found for url"):
+            flow.storage.build()
+
+
+@responses.activate
+def test_store_flow_fails_if_validation_fails():
+    with patch("prefect_saturn.core.Client", new=MockClient):
+        responses.add(**REGISTER_FLOW_RESPONSE())
+        responses.add(**BUILD_STORAGE_FAILURE_RESPONSE(400))
+        responses.add(**REGISTER_RUN_JOB_SPEC_RESPONSE(200))
+
+        integration = prefect_saturn.PrefectCloudIntegration(
+            prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+        )
+        flow = TEST_FLOW.copy()
+        flow = integration.register_flow_with_saturn(flow=flow)
+        with raises(HTTPError, match="Client Error"):
+            flow.storage.build()
 
 
 @responses.activate

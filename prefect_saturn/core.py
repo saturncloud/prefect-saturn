@@ -49,7 +49,6 @@ class PrefectCloudIntegration:
 
         flow.register(
             project_name=project_name,
-            build=False,
             labels=["saturn-cloud"]
         )
     """
@@ -212,17 +211,16 @@ class PrefectCloudIntegration:
 
         flow.storage.add_flow(flow)
 
-        # tell Saturn to store the flow
-        self._store_flow(flow=flow)
         return flow
 
     def _get_storage(self) -> Webhook:
         """
         Create a `Webhook` storage object with Saturn-y details.
         """
+        url = "${BASE_URL}api/prefect_cloud/flows/" + self.flow_id + "/flow_content?flow_version_id=" + self.flow_version_id
         storage = Webhook(
             build_request_kwargs={
-                "url": "${BASE_URL}api/prefect_cloud/flows/" + self.flow_id + "/flow_content",
+                "url": url,
                 "headers": {
                     "Content-Type": "application/octet-stream",
                     "Authorization": "token ${SATURN_TOKEN}",
@@ -230,10 +228,7 @@ class PrefectCloudIntegration:
             },
             build_request_http_method="POST",
             get_flow_request_kwargs={
-                "url": "${BASE_URL}api/prefect_cloud/flows/"
-                + self.flow_id
-                + "/flow_content?flow_version_id="
-                + self.flow_version_id,
+                "url": url,
                 "headers": {
                     "Accept": "application/octet-stream",
                     "Authorization": "token ${SATURN_TOKEN}",
@@ -243,22 +238,6 @@ class PrefectCloudIntegration:
         )
 
         return storage
-
-    def _store_flow(self, flow: Flow) -> Response:
-        """
-        Given a flow, ask Saturn to store it.
-        """
-        url = (
-            f"{self._base_url}api/prefect_cloud/flows/{self.flow_id}"
-            f"/flow_content?flow_version_id={self.flow_version_id}"
-        )
-        res = self._session.post(
-            url=url,
-            headers={"Content-Type": "application/octet-stream"},
-            data=cloudpickle.dumps(flow),
-        )
-        res.raise_for_status()
-        return res
 
     def _get_environment(
         self,

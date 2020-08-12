@@ -28,7 +28,6 @@ flow = integration.register_flow_with_saturn(flow)
 
 flow.register(
     project_name=project_name,
-    build=False,
     labels=["saturn-cloud"]
 )
 ```
