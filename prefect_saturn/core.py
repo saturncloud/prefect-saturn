@@ -55,16 +55,16 @@ class PrefectCloudIntegration:
     def __init__(self, prefect_cloud_project_name: str):
         try:
             SATURN_TOKEN = os.environ["SATURN_TOKEN"]
-        except KeyError:
-            raise RuntimeError(Errors.missing_env_var("SATURN_TOKEN"))
+        except KeyError as err:
+            raise RuntimeError(Errors.missing_env_var("SATURN_TOKEN")) from err
 
         try:
             base_url = os.environ["BASE_URL"]
             if not base_url.endswith("/"):
                 base_url += "/"
             self._base_url: str = base_url
-        except KeyError:
-            raise RuntimeError(Errors.missing_env_var("BASE_URL"))
+        except KeyError as err:
+            raise RuntimeError(Errors.missing_env_var("BASE_URL")) from err
 
         self.prefect_cloud_project_name: str = prefect_cloud_project_name
         self._saturn_flow_id: Optional[str] = None
