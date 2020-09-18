@@ -60,8 +60,8 @@ class PrefectCloudIntegration:
 
         try:
             base_url = os.environ["BASE_URL"]
-            if not base_url.endswith("/"):
-                base_url += "/"
+            if base_url.endswith("/"):
+                raise RuntimeError(Errors.BASE_URL_NO_SLASH)
             self._base_url: str = base_url
         except KeyError as err:
             raise RuntimeError(Errors.missing_env_var("BASE_URL")) from err
@@ -136,7 +136,7 @@ class PrefectCloudIntegration:
                 has changed
         """
         res = self._session.put(
-            url=f"{self._base_url}api/prefect_cloud/flows",
+            url=f"{self._base_url}/api/prefect_cloud/flows",
             headers={"Content-Type": "application/json"},
             json={
                 "name": flow.name,
@@ -215,7 +215,7 @@ class PrefectCloudIntegration:
         Create a `Webhook` storage object with Saturn-y details.
         """
         url = (
-            "${BASE_URL}api/prefect_cloud/flows/"
+            "${BASE_URL}/api/prefect_cloud/flows/"
             + self.flow_id
             + "/"
             + self.flow_version_id
@@ -254,7 +254,7 @@ class PrefectCloudIntegration:
         adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
 
         # get job spec with Saturn details from Atlas
-        url = f"{self._base_url}api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
+        url = f"{self._base_url}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
         response = self._session.get(url=url)
         response.raise_for_status()
         job_dict = response.json()
