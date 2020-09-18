@@ -11,6 +11,10 @@ class Errors:
     where multiple methods use the same error message.
     """
 
+    BASE_URL_NO_SLASH = (
+        "Because this client uses Webhook storage, "
+        "environment variable BASE_URL must end with a forward slash."
+    )
     NOT_REGISTERED = (
         "This flow has not been registered with Saturn yet. "
         "Please call register_flow_with_saturn()"
