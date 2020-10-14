@@ -285,7 +285,7 @@ class PrefectCloudIntegration:
             0
         ].get("args", [])
         args_from_prefect = " ".join(args_from_prefect)
-        new_args = f"source /home/jovyan/.saturn/start.sh; {args_from_prefect}"
+        new_args = f"source /home/jovyan/.saturn/start_wrapper.sh; {args_from_prefect}"
         k8s_environment._job_spec["spec"]["template"]["spec"]["containers"][0]["args"] = [new_args]
 
         return k8s_environment
