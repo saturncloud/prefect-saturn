@@ -316,7 +316,7 @@ def test_get_environment():
         assert environment.unique_job_name is True
         env_args = environment._job_spec["spec"]["template"]["spec"]["containers"][0]["args"]
         assert len(env_args) == 1
-        assert env_args[0].startswith("source /home/jovyan/.saturn/start.sh;")
+        assert env_args[0].startswith("source /home/jovyan/.saturn/start_wrapper.sh;")
         env_cmd = environment._job_spec["spec"]["template"]["spec"]["containers"][0]["command"]
         assert env_cmd == ["/bin/bash", "-ec"]
         assert environment.metadata["image"] == integration._saturn_image
