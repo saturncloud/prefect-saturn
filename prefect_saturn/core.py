@@ -184,11 +184,38 @@ class PrefectCloudIntegration:
         return self._saturn_image
 
     def register_flow_with_saturn(
-        self, flow: Flow, dask_cluster_kwargs=None, dask_adapt_kwargs=None
+        self,
+        flow: Flow,
+        dask_cluster_kwargs: Optional[Dict[str, Any]] = None,
+        dask_adapt_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Flow:
         """
         Given a flow, set up all the details needed to run it on
         a Saturn Dask cluster.
+
+        :param flow: A Prefect ``Flow`` object
+        :param dask_cluster_kwargs: Dictionary of keyword arguments
+            to the ``prefect_saturn.SaturnCluster`` constructor. If ``None``
+            (the default), the cluster will be created with
+            one worker (``{"n_workers": 1}``).
+        :param dask_adapt_kwargs: Dictionary of keyword arguments
+            to pass to ``prefect_saturn.SaturnCluster.adapt()``. If
+            ``None`` (the default), adaptive scaling will not be used.
+
+        Why adaptive scaling is off by default
+        --------------------------------------
+
+        Dasks's `adaptive scaling <https://docs.dask.org/en/latest/setup/adaptive.html>`_
+        can improve resource utilization by allowing Dask to spin things up
+        and down based on your workload.
+
+        This is off by default in the ``DaskExecutor`` created by ``prefect-saturn``
+        because in some cases, the interaction between Dask and Prefect can lead
+        adaptive scaling to make choices that interfere with the way Prefect executes
+        flows.
+
+        Prefect components
+        ------------------
 
         This method modifies the following components of ``Flow`` objects
         passed to it.
@@ -198,13 +225,19 @@ class PrefectCloudIntegration:
             is added. This environment will use the same image as the notebook
             from which this code is run.
         """
+        if dask_cluster_kwargs is None:
+            dask_cluster_kwargs = {"n_workers": 1}
+
+        if dask_adapt_kwargs is None:
+            dask_adapt_kwargs = {}
+
         self._set_flow_metadata(flow)
 
         storage = self._get_storage()
         flow.storage = storage
 
         environment = self._get_environment(
-            cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs
+            cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs  # type: ignore
         )
         flow.environment = environment
 
@@ -244,14 +277,12 @@ class PrefectCloudIntegration:
 
     def _get_environment(
         self,
-        cluster_kwargs: Optional[Dict[str, Any]] = None,
-        adapt_kwargs: Optional[Dict[str, Any]] = None,
+        cluster_kwargs: Dict[str, Any],
+        adapt_kwargs: Dict[str, Any],
     ) -> KubernetesJobEnvironment:
         """
         Get an environment that customizes the execution of a Prefect flow run.
         """
-        cluster_kwargs = cluster_kwargs or {"n_workers": 1}
-        adapt_kwargs = adapt_kwargs or {"minimum": 1, "maximum": 2}
 
         # get job spec with Saturn details from Atlas
         url = f"{self._base_url}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
