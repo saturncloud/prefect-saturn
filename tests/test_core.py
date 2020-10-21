@@ -311,7 +311,7 @@ def test_get_environment():
         flow = TEST_FLOW.copy()
         integration.register_flow_with_saturn(flow=flow)
 
-        environment = integration._get_environment()
+        environment = integration._get_environment(cluster_kwargs={"n_workers": 3}, adapt_kwargs={})
         assert isinstance(environment, KubernetesJobEnvironment)
         assert environment.unique_job_name is True
         env_args = environment._job_spec["spec"]["template"]["spec"]["containers"][0]["args"]
@@ -333,15 +333,56 @@ def test_get_environment_dask_kwargs():
             prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
         )
         flow = TEST_FLOW.copy()
-        integration.register_flow_with_saturn(flow=flow)
-
-        environment = integration._get_environment(
-            cluster_kwargs={"n_workers": 8}, adapt_kwargs={"minimum": 3, "maximum": 3}
+        flow = integration.register_flow_with_saturn(
+            flow=flow,
+            dask_cluster_kwargs={"n_workers": 8},
+            dask_adapt_kwargs={"minimum": 3, "maximum": 3},
         )
-        assert isinstance(environment, KubernetesJobEnvironment)
-        assert isinstance(environment.executor, DaskExecutor)
-        assert environment.executor.cluster_kwargs == {"n_workers": 8}
-        assert environment.executor.adapt_kwargs == {"minimum": 3, "maximum": 3}
+
+        assert isinstance(flow.environment, KubernetesJobEnvironment)
+        assert isinstance(flow.environment.executor, DaskExecutor)
+        assert flow.environment.executor.cluster_kwargs == {"n_workers": 8}
+        assert flow.environment.executor.adapt_kwargs == {"minimum": 3, "maximum": 3}
+
+
+@responses.activate
+def test_get_environment_dask_adaptive_scaling_off_by_default():
+    with patch("prefect_saturn.core.Client", new=MockClient):
+        responses.add(**REGISTER_FLOW_RESPONSE())
+        responses.add(**BUILD_STORAGE_RESPONSE())
+        responses.add(**REGISTER_RUN_JOB_SPEC_RESPONSE(200))
+
+        integration = prefect_saturn.PrefectCloudIntegration(
+            prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
+        )
+        flow = TEST_FLOW.copy()
+        flow = integration.register_flow_with_saturn(flow=flow)
+
+        assert isinstance(flow.environment, KubernetesJobEnvironment)
+        assert isinstance(flow.environment.executor, DaskExecutor)
+        assert flow.environment.executor.cluster_kwargs == {"n_workers": 1}
+        assert flow.environment.executor.adapt_kwargs == {}
+
+
+@responses.activate
+def test_get_environment_dask_kwargs_respects_empty_dict():
+    with patch("prefect_saturn.core.Client", new=MockClient):
+        responses.add(**REGISTER_FLOW_RESPONSE())
+        responses.add(**BUILD_STORAGE_RESPONSE())
+        responses.add(**REGISTER_RUN_JOB_SPEC_RESPONSE(200))
+
+        integration = prefect_saturn.PrefectCloudIntegration(
+            prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME,
+        )
+        flow = TEST_FLOW.copy()
+        flow = integration.register_flow_with_saturn(
+            flow=flow, dask_cluster_kwargs={}, dask_adapt_kwargs={}
+        )
+
+        assert isinstance(flow.environment, KubernetesJobEnvironment)
+        assert isinstance(flow.environment.executor, DaskExecutor)
+        assert flow.environment.executor.cluster_kwargs == {}
+        assert flow.environment.executor.adapt_kwargs == {}
 
 
 def test_get_environment_fails_if_flow_not_registered():
@@ -349,7 +390,7 @@ def test_get_environment_fails_if_flow_not_registered():
         prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
     )
     with raises(RuntimeError, match=prefect_saturn.Errors.NOT_REGISTERED):
-        integration._get_environment()
+        integration._get_environment(cluster_kwargs={}, adapt_kwargs={})
 
 
 @responses.activate
@@ -365,7 +406,7 @@ def test_add_environment_fails_if_id_not_recognized():
         integration._set_flow_metadata(flow=flow)
 
         with raises(HTTPError, match="404 Client Error"):
-            integration._get_environment()
+            integration._get_environment(cluster_kwargs={}, adapt_kwargs={})
 
 
 @responses.activate
