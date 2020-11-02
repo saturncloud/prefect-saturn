@@ -301,7 +301,7 @@ class PrefectCloudIntegration:
                 adapt_kwargs=adapt_kwargs,
             ),
             job_spec_file=local_tmp_file,
-            labels=[urlparse(self._base_url).hostname, "saturn-cloud"],
+            labels=[str(urlparse(self._base_url).hostname), "saturn-cloud"],
             unique_job_name=True,
         )
 

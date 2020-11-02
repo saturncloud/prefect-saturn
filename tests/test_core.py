@@ -15,6 +15,7 @@ from prefect.environments.storage import Webhook
 from pytest import raises
 from requests.exceptions import HTTPError
 from unittest.mock import patch
+from urllib.parse import urlparse
 
 os.environ["SATURN_TOKEN"] = "placeholder-token"
 os.environ["BASE_URL"] = "http://placeholder-url"
@@ -320,6 +321,9 @@ def test_get_environment():
         env_cmd = environment._job_spec["spec"]["template"]["spec"]["containers"][0]["command"]
         assert env_cmd == ["/bin/bash", "-ec"]
         assert environment.metadata["image"] == integration._saturn_image
+        assert len(environment.labels) == 2
+        assert "saturn-cloud" in environment.labels
+        assert urlparse(os.environ["BASE_URL"]).hostname in environment.labels
 
 
 @responses.activate

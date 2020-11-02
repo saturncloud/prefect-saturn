@@ -26,7 +26,7 @@ lint:
 
 .PHONY: unit-tests
 unit-tests:
-	pip uninstall -y prefect-saturn
+	pip uninstall -y prefect-saturn || true
 	python setup.py develop
 	pytest --cov=prefect_saturn --cov-fail-under=80 tests/
 
