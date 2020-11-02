@@ -6,6 +6,7 @@ import hashlib
 import os
 
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -46,10 +47,7 @@ class PrefectCloudIntegration:
         )
         flow = integration.register_flow_with_saturn(flow)
 
-        flow.register(
-            project_name=project_name,
-            labels=["saturn-cloud"]
-        )
+        flow.register(project_name=project_name)
     """
 
     def __init__(self, prefect_cloud_project_name: str):
@@ -303,6 +301,7 @@ class PrefectCloudIntegration:
                 adapt_kwargs=adapt_kwargs,
             ),
             job_spec_file=local_tmp_file,
+            labels=[urlparse(self._base_url).hostname, "saturn-cloud"],
             unique_job_name=True,
         )
 
