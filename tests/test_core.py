@@ -20,6 +20,8 @@ from urllib.parse import urlparse
 os.environ["SATURN_TOKEN"] = "placeholder-token"
 os.environ["BASE_URL"] = "http://placeholder-url"
 
+FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
+
 TEST_FLOW_ID = str(random.randint(1, 500))
 TEST_FLOW_VERSION_ID = str(uuid.uuid4())
 TEST_FLOW_NAME = "plz-w0rk"
@@ -52,6 +54,7 @@ def REGISTER_FLOW_RESPONSE(
             "id": flow_id or TEST_FLOW_ID,
             "flow_version_id": TEST_FLOW_VERSION_ID,
             "image": TEST_IMAGE,
+            "labels": FLOW_LABELS,
         },
         "status": status or 201,
     }
@@ -321,9 +324,9 @@ def test_get_environment():
         env_cmd = environment._job_spec["spec"]["template"]["spec"]["containers"][0]["command"]
         assert env_cmd == ["/bin/bash", "-ec"]
         assert environment.metadata["image"] == integration._saturn_image
-        assert len(environment.labels) == 2
-        assert "saturn-cloud" in environment.labels
-        assert urlparse(os.environ["BASE_URL"]).hostname in environment.labels
+        assert len(environment.labels) == len(FLOW_LABELS)
+        for label in FLOW_LABELS:
+            assert label in environment.labels
 
 
 @responses.activate
