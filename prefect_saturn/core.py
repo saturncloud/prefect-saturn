@@ -5,7 +5,7 @@ This module contains the user-facing API for ``prefect-saturn``.
 import hashlib
 import os
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -46,10 +46,7 @@ class PrefectCloudIntegration:
         )
         flow = integration.register_flow_with_saturn(flow)
 
-        flow.register(
-            project_name=project_name,
-            labels=["saturn-cloud"]
-        )
+        flow.register(project_name=project_name)
     """
 
     def __init__(self, prefect_cloud_project_name: str):
@@ -70,6 +67,7 @@ class PrefectCloudIntegration:
         self._saturn_flow_id: Optional[str] = None
         self._saturn_flow_version_id: Optional[str] = None
         self._saturn_image: Optional[str] = None
+        self._saturn_flow_labels: Optional[List[str]] = None
 
         # set up logic for authenticating with Saturn back-end service
         retry_logic = HTTPAdapter(max_retries=Retry(total=3))
@@ -149,6 +147,7 @@ class PrefectCloudIntegration:
         self._saturn_flow_id = str(response_json["id"])
         self._saturn_flow_version_id = response_json["flow_version_id"]
         self._saturn_image = response_json["image"]
+        self._saturn_flow_labels = response_json.get("labels", ["saturn-cloud"])
 
     @property
     def flow_id(self) -> str:
@@ -303,6 +302,7 @@ class PrefectCloudIntegration:
                 adapt_kwargs=adapt_kwargs,
             ),
             job_spec_file=local_tmp_file,
+            labels=self._saturn_flow_labels,
             unique_job_name=True,
         )
 

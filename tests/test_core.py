@@ -15,9 +15,12 @@ from prefect.environments.storage import Webhook
 from pytest import raises
 from requests.exceptions import HTTPError
 from unittest.mock import patch
+from urllib.parse import urlparse
 
 os.environ["SATURN_TOKEN"] = "placeholder-token"
 os.environ["BASE_URL"] = "http://placeholder-url"
+
+FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 
 TEST_FLOW_ID = str(random.randint(1, 500))
 TEST_FLOW_VERSION_ID = str(uuid.uuid4())
@@ -51,6 +54,7 @@ def REGISTER_FLOW_RESPONSE(
             "id": flow_id or TEST_FLOW_ID,
             "flow_version_id": TEST_FLOW_VERSION_ID,
             "image": TEST_IMAGE,
+            "labels": FLOW_LABELS,
         },
         "status": status or 201,
     }
@@ -320,6 +324,9 @@ def test_get_environment():
         env_cmd = environment._job_spec["spec"]["template"]["spec"]["containers"][0]["command"]
         assert env_cmd == ["/bin/bash", "-ec"]
         assert environment.metadata["image"] == integration._saturn_image
+        assert len(environment.labels) == len(FLOW_LABELS)
+        for label in FLOW_LABELS:
+            assert label in environment.labels
 
 
 @responses.activate
