@@ -44,6 +44,12 @@ jobs:
         run: |
           pip install --upgrade cloudpickle pytest pytest-cov responses
           make unit-tests
+      - name: test source distribution
+        if: matrix.task == 'sdist'
+        shell: bash
+        run: |
+          python setup.py sdist
+          pip install dist/prefect-saturn-$(cat VERSION).tar.gz
       - name: todo-checks
         if: matrix.task == 'todo-checks'
         shell: bash
