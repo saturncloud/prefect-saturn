@@ -104,7 +104,7 @@ class PrefectCloudIntegration:
         hasher.update(cloudpickle.dumps(identifying_content))
         return hasher.hexdigest()
 
-    def _set_flow_metadata(self, flow: Flow) -> None:
+    def _set_flow_metadata(self, flow: Flow, instance_size: Optional[str] = None) -> None:
         """
         Given a Flow, register it with Saturn. This method has
         the following side effects.
@@ -133,14 +133,17 @@ class PrefectCloudIntegration:
             * updates ``self._saturn_image`` in case the image for the flow
                 has changed
         """
+        data = {
+            "name": flow.name,
+            "prefect_cloud_project_name": self.prefect_cloud_project_name,
+            "flow_hash": self._hash_flow(flow),
+        }
+        if instance_size:
+            data["instance_size"] = instance_size
         res = self._session.put(
             url=f"{self._base_url}/api/prefect_cloud/flows",
             headers={"Content-Type": "application/json"},
-            json={
-                "name": flow.name,
-                "prefect_cloud_project_name": self.prefect_cloud_project_name,
-                "flow_hash": self._hash_flow(flow),
-            },
+            json=data,
         )
         res.raise_for_status()
         response_json = res.json()
@@ -187,6 +190,7 @@ class PrefectCloudIntegration:
         flow: Flow,
         dask_cluster_kwargs: Optional[Dict[str, Any]] = None,
         dask_adapt_kwargs: Optional[Dict[str, Any]] = None,
+        instance_size: Optional[str] = None,
     ) -> Flow:
         """
         Given a flow, set up all the details needed to run it on
@@ -200,6 +204,9 @@ class PrefectCloudIntegration:
         :param dask_adapt_kwargs: Dictionary of keyword arguments
             to pass to ``prefect_saturn.SaturnCluster.adapt()``. If
             ``None`` (the default), adaptive scaling will not be used.
+        :param instance_size: Instance size for the flow run. Does not affect
+            the size of dask workers. If ``None``, the smallest available size
+            will be used.
 
         Why adaptive scaling is off by default
         --------------------------------------
@@ -230,7 +237,7 @@ class PrefectCloudIntegration:
         if dask_adapt_kwargs is None:
             dask_adapt_kwargs = {}
 
-        self._set_flow_metadata(flow)
+        self._set_flow_metadata(flow, instance_size=instance_size)
 
         storage = self._get_storage()
         flow.storage = storage
