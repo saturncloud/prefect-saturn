@@ -410,7 +410,7 @@ def test_add_environment_fails_if_id_not_recognized():
             prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
         )
         flow = TEST_FLOW.copy()
-        integration._set_flow_metadata(flow=flow)
+        integration._set_flow_metadata(flow=flow, instance_size=None)
 
         with raises(HTTPError, match="404 Client Error"):
             integration._get_environment(cluster_kwargs={}, adapt_kwargs={})
