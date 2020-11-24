@@ -3,7 +3,6 @@ This module contains the user-facing API for ``prefect-saturn``.
 """
 
 import hashlib
-import os
 
 from typing import Any, Dict, List, Optional, Union
 from requests import Session
@@ -19,6 +18,27 @@ from prefect.environments import KubernetesJobEnvironment
 import yaml
 
 from .messages import Errors
+from .settings import BASE_URL, SATURN_TOKEN
+
+
+def _session() -> Session:
+    retry_logic = HTTPAdapter(max_retries=Retry(total=3))
+    session = Session()
+    session.mount("http://", retry_logic)
+    session.mount("https://", retry_logic)
+    session.headers.update({"Authorization": f"token {SATURN_TOKEN}"})
+    return session
+
+
+def describe_sizes() -> Dict[str, Any]:
+    """Returns available instance sizes for flows and dask clusters"""
+    res = _session().get(
+        url=f"{BASE_URL}/api/info/servers",
+        headers={"Content-Type": "application/json"},
+    )
+    res.raise_for_status()
+    response_json = res.json()
+    return response_json["sizes"]
 
 
 class PrefectCloudIntegration:
@@ -50,18 +70,6 @@ class PrefectCloudIntegration:
     """
 
     def __init__(self, prefect_cloud_project_name: str):
-        try:
-            SATURN_TOKEN = os.environ["SATURN_TOKEN"]
-        except KeyError as err:
-            raise RuntimeError(Errors.missing_env_var("SATURN_TOKEN")) from err
-
-        try:
-            base_url = os.environ["BASE_URL"]
-            if base_url.endswith("/"):
-                raise RuntimeError(Errors.BASE_URL_NO_SLASH)
-            self._base_url: str = base_url
-        except KeyError as err:
-            raise RuntimeError(Errors.missing_env_var("BASE_URL")) from err
 
         self.prefect_cloud_project_name: str = prefect_cloud_project_name
         self._saturn_flow_id: Optional[str] = None
@@ -70,11 +78,7 @@ class PrefectCloudIntegration:
         self._saturn_flow_labels: Optional[List[str]] = None
 
         # set up logic for authenticating with Saturn back-end service
-        retry_logic = HTTPAdapter(max_retries=Retry(total=3))
-        self._session = Session()
-        self._session.mount("http://", retry_logic)
-        self._session.mount("https://", retry_logic)
-        self._session.headers.update({"Authorization": f"token {SATURN_TOKEN}"})
+        self._session = _session()
 
     def _hash_flow(self, flow: Flow) -> str:
         """
@@ -141,7 +145,7 @@ class PrefectCloudIntegration:
         if instance_size:
             data["instance_size"] = instance_size
         res = self._session.put(
-            url=f"{self._base_url}/api/prefect_cloud/flows",
+            url=f"{BASE_URL}/api/prefect_cloud/flows",
             headers={"Content-Type": "application/json"},
             json=data,
         )
@@ -230,6 +234,13 @@ class PrefectCloudIntegration:
         * ``.environment``: a ``KubernetesJobEnvironment`` with a ``DaskExecutor``
             is added. This environment will use the same image as the notebook
             from which this code is run.
+
+        Instance size
+        -------------
+
+        Use the prefect_saturn.describe_sizes function to get the available instance_size options.
+        The returned dict maps instance_size to a short description of the resources available on
+        that size (e.g. {"medium": "Medium - 2 cores - 4 GB RAM", ...})
         """
         if dask_cluster_kwargs is None:
             dask_cluster_kwargs = {"n_workers": 1}
@@ -291,7 +302,7 @@ class PrefectCloudIntegration:
         """
 
         # get job spec with Saturn details from Atlas
-        url = f"{self._base_url}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
+        url = f"{BASE_URL}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
         response = self._session.get(url=url)
         response.raise_for_status()
         job_dict = response.json()
