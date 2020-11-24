@@ -5,7 +5,7 @@ This module contains the user-facing API for ``prefect-saturn``.
 import hashlib
 import os
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
