@@ -17,9 +17,6 @@ from requests.exceptions import HTTPError
 from unittest.mock import patch
 from urllib.parse import urlparse
 
-os.environ["SATURN_TOKEN"] = "placeholder-token"
-os.environ["BASE_URL"] = "http://placeholder-url"
-
 FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 
 TEST_FLOW_ID = str(random.randint(1, 500))
