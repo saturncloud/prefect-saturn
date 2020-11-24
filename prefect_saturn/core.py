@@ -104,7 +104,7 @@ class PrefectCloudIntegration:
         hasher.update(cloudpickle.dumps(identifying_content))
         return hasher.hexdigest()
 
-    def _set_flow_metadata(self, flow: Flow, instance_size: Optional[str] = None) -> None:
+    def _set_flow_metadata(self, flow: Flow, instance_size: Union[str, None]) -> None:
         """
         Given a Flow, register it with Saturn. This method has
         the following side effects.
