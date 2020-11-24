@@ -456,7 +456,7 @@ def test_register_flow_with_saturn_does_everything():
         assert flow.storage is None
         assert isinstance(flow.environment, LocalEnvironment)
 
-        flow = integration.register_flow_with_saturn(flow=flow)
+        flow = integration.register_flow_with_saturn(flow=flow, instance_size="large")
         assert integration._saturn_flow_id == test_flow_id
         assert integration._saturn_flow_version_id == TEST_FLOW_VERSION_ID
         assert integration._saturn_image == TEST_IMAGE
