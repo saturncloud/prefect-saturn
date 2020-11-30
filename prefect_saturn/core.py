@@ -17,23 +17,24 @@ from prefect.environments.storage import Webhook
 from prefect.environments import KubernetesJobEnvironment
 import yaml
 
+from .settings import Settings
 from .messages import Errors
-from .settings import BASE_URL, SATURN_TOKEN
 
 
-def _session() -> Session:
+def _session(token: str) -> Session:
     retry_logic = HTTPAdapter(max_retries=Retry(total=3))
     session = Session()
     session.mount("http://", retry_logic)
     session.mount("https://", retry_logic)
-    session.headers.update({"Authorization": f"token {SATURN_TOKEN}"})
+    session.headers.update({"Authorization": f"token {token}"})
     return session
 
 
 def describe_sizes() -> Dict[str, Any]:
     """Returns available instance sizes for flows and dask clusters"""
-    res = _session().get(
-        url=f"{BASE_URL}/api/info/servers",
+    settings = Settings()
+    res = _session(settings.SATURN_TOKEN).get(
+        url=f"{settings.BASE_URL}/api/info/servers",
         headers={"Content-Type": "application/json"},
     )
     res.raise_for_status()
@@ -70,7 +71,6 @@ class PrefectCloudIntegration:
     """
 
     def __init__(self, prefect_cloud_project_name: str):
-
         self.prefect_cloud_project_name: str = prefect_cloud_project_name
         self._saturn_flow_id: Optional[str] = None
         self._saturn_flow_version_id: Optional[str] = None
@@ -78,7 +78,8 @@ class PrefectCloudIntegration:
         self._saturn_flow_labels: Optional[List[str]] = None
 
         # set up logic for authenticating with Saturn back-end service
-        self._session = _session()
+        self._settings = Settings()
+        self._session = _session(self._settings.SATURN_TOKEN)
 
     def _hash_flow(self, flow: Flow) -> str:
         """
@@ -145,7 +146,7 @@ class PrefectCloudIntegration:
         if instance_size:
             data["instance_size"] = instance_size
         res = self._session.put(
-            url=f"{BASE_URL}/api/prefect_cloud/flows",
+            url=f"{self._settings.BASE_URL}/api/prefect_cloud/flows",
             headers={"Content-Type": "application/json"},
             json=data,
         )
@@ -302,7 +303,7 @@ class PrefectCloudIntegration:
         """
 
         # get job spec with Saturn details from Atlas
-        url = f"{BASE_URL}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
+        url = f"{self._settings.BASE_URL}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
         response = self._session.get(url=url)
         response.raise_for_status()
         job_dict = response.json()
