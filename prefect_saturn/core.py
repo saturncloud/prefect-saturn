@@ -239,7 +239,7 @@ class PrefectCloudIntegration:
         Instance size
         -------------
 
-        Use the prefect_saturn.describe_sizes function to get the available instance_size options.
+        Use `prefect_saturn.describe_sizes()` to get the available instance_size options.
         The returned dict maps instance_size to a short description of the resources available on
         that size (e.g. {"medium": "Medium - 2 cores - 4 GB RAM", ...})
         """
