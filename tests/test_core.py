@@ -17,9 +17,6 @@ from requests.exceptions import HTTPError
 from unittest.mock import patch
 from urllib.parse import urlparse
 
-os.environ["SATURN_TOKEN"] = "placeholder-token"
-os.environ["BASE_URL"] = "http://placeholder-url"
-
 FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 
 TEST_FLOW_ID = str(random.randint(1, 500))
@@ -410,7 +407,7 @@ def test_add_environment_fails_if_id_not_recognized():
             prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
         )
         flow = TEST_FLOW.copy()
-        integration._set_flow_metadata(flow=flow)
+        integration._set_flow_metadata(flow=flow, instance_size=None)
 
         with raises(HTTPError, match="404 Client Error"):
             integration._get_environment(cluster_kwargs={}, adapt_kwargs={})
@@ -456,7 +453,7 @@ def test_register_flow_with_saturn_does_everything():
         assert flow.storage is None
         assert isinstance(flow.environment, LocalEnvironment)
 
-        flow = integration.register_flow_with_saturn(flow=flow)
+        flow = integration.register_flow_with_saturn(flow=flow, instance_size="large")
         assert integration._saturn_flow_id == test_flow_id
         assert integration._saturn_flow_version_id == TEST_FLOW_VERSION_ID
         assert integration._saturn_image == TEST_IMAGE
