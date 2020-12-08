@@ -111,6 +111,23 @@ def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int, flow_id: str = TEST_FLOW_ID) -> 
     }
 
 
+# ----------------- #
+# /api/info/servers #
+# ------------------#
+def SERVER_SIZES_RESPONSE(status: int) -> Dict[str, str]:
+    return {
+        "method": responses.GET,
+        "url": f"{os.environ['BASE_URL']}/api/info/servers",
+        "status": status,
+        "json": {
+            "sizes": {
+                "medium": "medium - 2 cores - 4 GB RAM",
+                "8xlarge": "8XLarge - 32 cores - 256 GB RAM"
+            }
+        }
+    }
+
+
 class MockClient:
     def __init__(self):
         self._active_tenant_id = "543c5453-0a47-496a-9c61-a6765acef352"
@@ -460,3 +477,25 @@ def test_register_flow_with_saturn_does_everything():
         assert isinstance(flow.storage, Webhook)
         assert isinstance(flow.environment, KubernetesJobEnvironment)
         assert isinstance(flow.environment.executor, DaskExecutor)
+
+
+@responses.activate
+def test_describe_sizes_successful():
+    responses.add(**SERVER_SIZES_RESPONSE(status=200))
+    result = prefect_saturn.describe_sizes()
+    assert isinstance(result, dict)
+    assert result["medium"] == "medium - 2 cores - 4 GB RAM"
+
+
+@responses.activate
+def test_describe_sizes_raises_informative_error_on_failure():
+    # with raises(HTTPError, match="Not Found for url"):
+    with raises(HTTPError, match="Unauthorized"):
+        responses.add(**SERVER_SIZES_RESPONSE(status=401))
+        result = prefect_saturn.describe_sizes()
+
+    failure_response = SERVER_SIZES_RESPONSE(500)
+    failure_response["method_or_response"] = failure_response.pop("method")
+    responses.replace(**failure_response)
+    with raises(HTTPError, match="Server Error"):
+        result = prefect_saturn.describe_sizes()
