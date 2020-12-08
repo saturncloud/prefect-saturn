@@ -489,7 +489,6 @@ def test_describe_sizes_successful():
 
 @responses.activate
 def test_describe_sizes_raises_informative_error_on_failure():
-    # with raises(HTTPError, match="Not Found for url"):
     with raises(HTTPError, match="Unauthorized"):
         responses.add(**SERVER_SIZES_RESPONSE(status=401))
         prefect_saturn.describe_sizes()
