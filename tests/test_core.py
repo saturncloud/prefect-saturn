@@ -339,18 +339,18 @@ def test_get_environment_dask_kwargs():
         flow = TEST_FLOW.copy()
         flow = integration.register_flow_with_saturn(
             flow=flow,
-            dask_cluster_kwargs={"n_workers": 8},
+            dask_cluster_kwargs={"n_workers": 8, "autoclose": True},
             dask_adapt_kwargs={"minimum": 3, "maximum": 3},
         )
 
         assert isinstance(flow.environment, KubernetesJobEnvironment)
         assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {"n_workers": 8}
+        assert flow.environment.executor.cluster_kwargs == {"n_workers": 8, "autoclose": True}
         assert flow.environment.executor.adapt_kwargs == {"minimum": 3, "maximum": 3}
 
 
 @responses.activate
-def test_get_environment_dask_adaptive_scaling_off_by_default():
+def test_get_environment_dask_adaptive_scaling_and_autoclosing_off_by_default():
     with patch("prefect_saturn.core.Client", new=MockClient):
         responses.add(**REGISTER_FLOW_RESPONSE())
         responses.add(**BUILD_STORAGE_RESPONSE())
@@ -364,7 +364,7 @@ def test_get_environment_dask_adaptive_scaling_off_by_default():
 
         assert isinstance(flow.environment, KubernetesJobEnvironment)
         assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {"n_workers": 1}
+        assert flow.environment.executor.cluster_kwargs == {"n_workers": 1, "autoclose": False}
         assert flow.environment.executor.adapt_kwargs == {}
 
 

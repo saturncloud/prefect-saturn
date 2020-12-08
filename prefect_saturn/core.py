@@ -203,27 +203,15 @@ class PrefectCloudIntegration:
 
         :param flow: A Prefect ``Flow`` object
         :param dask_cluster_kwargs: Dictionary of keyword arguments
-            to the ``prefect_saturn.SaturnCluster`` constructor. If ``None``
+            to the ``dask_saturn.SaturnCluster`` constructor. If ``None``
             (the default), the cluster will be created with
             one worker (``{"n_workers": 1}``).
         :param dask_adapt_kwargs: Dictionary of keyword arguments
-            to pass to ``prefect_saturn.SaturnCluster.adapt()``. If
+            to pass to ``dask_saturn.SaturnCluster.adapt()``. If
             ``None`` (the default), adaptive scaling will not be used.
         :param instance_size: Instance size for the flow run. Does not affect
             the size of dask workers. If ``None``, the smallest available size
             will be used.
-
-        Why adaptive scaling is off by default
-        --------------------------------------
-
-        Dasks's `adaptive scaling <https://docs.dask.org/en/latest/setup/adaptive.html>`_
-        can improve resource utilization by allowing Dask to spin things up
-        and down based on your workload.
-
-        This is off by default in the ``DaskExecutor`` created by ``prefect-saturn``
-        because in some cases, the interaction between Dask and Prefect can lead
-        adaptive scaling to make choices that interfere with the way Prefect executes
-        flows.
 
         Prefect components
         ------------------
@@ -236,15 +224,59 @@ class PrefectCloudIntegration:
             is added. This environment will use the same image as the notebook
             from which this code is run.
 
+        Adaptive scaling is off by default
+        --------------------------------------
+
+        Dasks's `adaptive scaling <https://docs.dask.org/en/latest/setup/adaptive.html>`_
+        can improve resource utilization by allowing Dask to spin things up
+        and down based on your workload.
+
+        This is off by default in the ``DaskExecutor`` created by ``prefect-saturn``
+        because in some cases, the interaction between Dask and Prefect can lead
+        adaptive scaling to make choices that interfere with the way Prefect executes
+        flows.
+
+        Dask cluster is not closed at the end of each flow run
+        ------------------------------------------------------
+
+        The first time a flow runs in Saturn, it will look for a specific Dask cluster. If
+        that cluster isn't found, it will start one. By default, the Dask cluster will not
+        be shut down when the flow is done running. All runs of one flow are executed on the
+        same Saturn Dask cluster. Autoclosing is off by default to avoid the situation
+        where you have two runs of the same flow happening at the same time, and one flow
+        kills the Dask cluster the other flow is still running on.
+
+        If you are not worried about concurrent flow runs and want to know that the Dask
+        cluster will be shut down at the end of each flow run, you can override this default
+        behavior with the parameter ``autoclose``. Setting this to ``True`` will tell Saturn
+        to close down the Dask cluster at the end of a flow run.
+
+        .. code-block:: python
+
+            flow = integration.register_flow_with_saturn(
+                flow=flow,
+                dask_cluster_kwargs={
+                    "n_workers": 4,
+                    "autoclose": True
+                }
+            )
+
         Instance size
         -------------
 
-        Use `prefect_saturn.describe_sizes()` to get the available instance_size options.
+        Use ``prefect_saturn.describe_sizes()`` to get the available instance_size options.
         The returned dict maps instance_size to a short description of the resources available on
         that size (e.g. {"medium": "Medium - 2 cores - 4 GB RAM", ...})
         """
+        default_cluster_kwargs = {"n_workers": 1, "autoclose": False}
+
         if dask_cluster_kwargs is None:
-            dask_cluster_kwargs = {"n_workers": 1}
+            dask_cluster_kwargs = default_cluster_kwargs
+        elif dask_cluster_kwargs == {}:
+            pass
+        else:
+            default_cluster_kwargs.update(dask_cluster_kwargs)
+            dask_cluster_kwargs = default_cluster_kwargs
 
         if dask_adapt_kwargs is None:
             dask_adapt_kwargs = {}
