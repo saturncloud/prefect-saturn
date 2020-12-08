@@ -122,9 +122,9 @@ def SERVER_SIZES_RESPONSE(status: int) -> Dict[str, str]:
         "json": {
             "sizes": {
                 "medium": "medium - 2 cores - 4 GB RAM",
-                "8xlarge": "8XLarge - 32 cores - 256 GB RAM"
+                "8xlarge": "8XLarge - 32 cores - 256 GB RAM",
             }
-        }
+        },
     }
 
 
@@ -492,10 +492,10 @@ def test_describe_sizes_raises_informative_error_on_failure():
     # with raises(HTTPError, match="Not Found for url"):
     with raises(HTTPError, match="Unauthorized"):
         responses.add(**SERVER_SIZES_RESPONSE(status=401))
-        result = prefect_saturn.describe_sizes()
+        prefect_saturn.describe_sizes()
 
     failure_response = SERVER_SIZES_RESPONSE(500)
     failure_response["method_or_response"] = failure_response.pop("method")
     responses.replace(**failure_response)
     with raises(HTTPError, match="Server Error"):
-        result = prefect_saturn.describe_sizes()
+        prefect_saturn.describe_sizes()
