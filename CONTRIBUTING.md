@@ -56,6 +56,15 @@ make unit-tests
 
 The `unit-tests` recipe in `Makefile` includes a minimum code coverage threshold. All pull requests must pass all tests with more than this level of code coverage. The current coverage is reported in the results of `make unit-tests`.
 
+To get a clickable report that shows which lines are not covered by tests, use the following:
+
+```shell
+make unit-tests
+coverage html
+```
+
+Open the file `htmlcov/index.html` to see a coverage report.
+
 ### Integration tests
 
 `prefect-saturn`'s unit tests mock out its interactions with the rest of Saturn Cloud. Integration tests that test those interactions contain some sensitive information, and are stored in a private repository.
