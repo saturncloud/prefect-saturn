@@ -272,9 +272,7 @@ class PrefectCloudIntegration:
 
         if dask_cluster_kwargs is None:
             dask_cluster_kwargs = default_cluster_kwargs
-        elif dask_cluster_kwargs == {}:
-            pass
-        else:
+        elif dask_cluster_kwargs != {}:
             default_cluster_kwargs.update(dask_cluster_kwargs)
             dask_cluster_kwargs = default_cluster_kwargs
 
