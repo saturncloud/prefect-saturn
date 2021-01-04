@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 
 from prefect import task, Flow
 from prefect.engine.executors import DaskExecutor
-from prefect.environments import KubernetesJobEnvironment, LocalEnvironment
+from prefect.environments import KubernetesJobEnvironment
 from prefect.environments.storage import Webhook
 from pytest import raises
 from requests.exceptions import HTTPError
