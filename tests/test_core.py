@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 
 from prefect import task, Flow
 from prefect.engine.executors import DaskExecutor
-from prefect.environments import KubernetesJobEnvironment, LocalEnvironment
+from prefect.environments import KubernetesJobEnvironment
 from prefect.environments.storage import Webhook
 from pytest import raises
 from requests.exceptions import HTTPError
@@ -468,7 +468,6 @@ def test_register_flow_with_saturn_does_everything():
 
         flow = TEST_FLOW.copy()
         assert flow.storage is None
-        assert isinstance(flow.environment, LocalEnvironment)
 
         flow = integration.register_flow_with_saturn(flow=flow, instance_size="large")
         assert integration._saturn_flow_id == test_flow_id
