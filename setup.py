@@ -48,7 +48,7 @@ setup(
     packages=find_packages(),
     install_requires=install_requires,
     python_requires=">=3.7",
-    extras_require={"dev": install_requires + testing_deps},
+    extras_require={"dev": install_requires + testing_deps, "test": testing_deps},
     test_suite="tests",
     tests_require=testing_deps,
     zip_safe=False,
