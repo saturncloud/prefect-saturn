@@ -8,7 +8,13 @@ with open("VERSION", "r") as f:
     version = f.read().strip()
 
 # prefect has to be 0.13.0 or newer to get Webhook storage
-install_requires = ["cloudpickle", "dask-saturn>=0.0.4", "prefect>0.13.0", "requests"]
+install_requires = [
+    "cloudpickle",
+    "dask-saturn>=0.0.4",
+    "prefect>0.13.0",
+    "requests",
+    "ruamel.yaml",
+]
 testing_deps = ["pytest", "pytest-cov", "responses"]
 
 setup(
