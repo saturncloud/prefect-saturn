@@ -4,7 +4,6 @@ import prefect_saturn
 import random
 import responses
 import uuid
-import yaml
 
 from typing import Any, Dict, Optional
 
@@ -16,6 +15,8 @@ from pytest import raises
 from requests.exceptions import HTTPError
 from unittest.mock import patch
 from urllib.parse import urlparse
+from ruamel import yaml
+
 
 FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 
@@ -100,7 +101,7 @@ def BUILD_STORAGE_FAILURE_RESPONSE(
 def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int, flow_id: str = TEST_FLOW_ID) -> Dict[str, Any]:
     run_job_spec_file = os.path.join(os.path.dirname(__file__), "run-job-spec.yaml")
     with open(run_job_spec_file, "r") as file:
-        run_job_spec = yaml.load(file, Loader=yaml.FullLoader)
+        run_job_spec = yaml.load(file, Loader=yaml.RoundTripLoader)
 
     base_url = os.environ["BASE_URL"]
     return {

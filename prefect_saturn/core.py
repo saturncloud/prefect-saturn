@@ -15,7 +15,7 @@ from prefect.client import Client
 from prefect.engine.executors import DaskExecutor
 from prefect.environments.storage import Webhook
 from prefect.environments import KubernetesJobEnvironment
-import yaml
+from ruamel import yaml
 
 from .settings import Settings
 from .messages import Errors
@@ -340,7 +340,7 @@ class PrefectCloudIntegration:
 
         local_tmp_file = "/tmp/prefect-flow-run.yaml"
         with open(local_tmp_file, "w") as f:
-            f.write(yaml.dump(job_dict))
+            yaml.dump(job_dict, stream=f, Dumper=yaml.RoundTripDumper)
 
         # saturn_flow_id is used by Saturn's custom Prefect agent
         k8s_environment = KubernetesJobEnvironment(
