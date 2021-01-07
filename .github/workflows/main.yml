@@ -43,7 +43,7 @@ jobs:
         if: matrix.task == 'unit-tests'
         shell: bash
         run: |
-          pip install --upgrade cloudpickle pytest pytest-cov responses
+          pip install -I --upgrade -e .[test]
           make unit-tests
       - name: test source distribution
         if: matrix.task == 'sdist'
