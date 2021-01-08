@@ -21,6 +21,7 @@ from .settings import Settings
 from .messages import Errors
 
 
+# TODO: do stuff
 def _session(token: str) -> Session:
     retry_logic = HTTPAdapter(max_retries=Retry(total=3))
     session = Session()

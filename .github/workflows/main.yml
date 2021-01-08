@@ -51,15 +51,3 @@ jobs:
         run: |
           python setup.py sdist
           pip install dist/prefect-saturn-$(cat VERSION).tar.gz
-      - name: todo-checks
-        if: matrix.task == 'todo-checks'
-        shell: bash
-        run: |
-          num_todos=$(git grep -i -E "TODO|FIXME" | wc -l)
-          echo "found ${num_todos} TODOs in code"
-          num_allowed=10
-          if [[ $num_todos -gt $num_allowed ]]; then
-            exit ${num_todos}
-          else
-            exit 0
-          fi
