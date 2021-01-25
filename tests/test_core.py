@@ -115,7 +115,7 @@ def REGISTER_RUN_JOB_SPEC_RESPONSE(status: int, flow_id: str = TEST_FLOW_ID) -> 
 # ----------------- #
 # /api/info/servers #
 # ------------------#
-def SERVER_SIZES_RESPONSE(status: int) -> Dict[str, str]:
+def SERVER_SIZES_RESPONSE(status: int) -> Dict[str, Any]:
     return {
         "method": responses.GET,
         "url": f"{os.environ['BASE_URL']}/api/info/servers",
