@@ -8,15 +8,14 @@ import uuid
 from typing import Any, Dict, Optional
 
 from prefect import task, Flow
-from prefect.engine.executors import DaskExecutor
 from prefect.environments import KubernetesJobEnvironment
-from prefect.environments.storage import Webhook
 from pytest import raises
 from requests.exceptions import HTTPError
 from unittest.mock import patch
 from urllib.parse import urlparse
 from ruamel import yaml
 
+from prefect_saturn._compat import Webhook, DaskExecutor
 
 FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 

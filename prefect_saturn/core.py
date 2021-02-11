@@ -12,11 +12,10 @@ from requests.packages.urllib3.util.retry import Retry
 import cloudpickle
 from prefect import Flow
 from prefect.client import Client
-from prefect.engine.executors import DaskExecutor
-from prefect.environments.storage import Webhook
 from prefect.environments import KubernetesJobEnvironment
 from ruamel import yaml
 
+from ._compat import DaskExecutor, Webhook
 from .settings import Settings
 from .messages import Errors
 
