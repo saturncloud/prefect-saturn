@@ -15,20 +15,25 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.task }}
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
           - task: linting
+            name: linting
           - task: sdist
+            name: sdist
           - task: unit-tests
-            prefect_version: ==0.13.9
+            prefect_version: ">0.13.0,<0.14.0"
+            name: "unit-tests (prefect 0.13.x)"
           - task: unit-tests
             prefect_version: ">0.14.0,<0.15.0"
+            name: "unit-tests (prefect 0.14.x)"
           - task: unit-tests
             prefect_version: ""
+            name: "unit-tests (prefect latest)"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
