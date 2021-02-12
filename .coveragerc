@@ -1,0 +1,7 @@
+# .coveragerc explained
+#     - https://coverage.readthedocs.io/en/coverage-4.2/config.html
+#     - https://coverage.readthedocs.io/en/coverage-4.2/source.html#source
+
+[run]
+omit =
+    *_compat.py
