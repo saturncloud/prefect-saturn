@@ -23,24 +23,29 @@ jobs:
         include:
           - task: linting
             name: linting
+            python_version: 3.7
           - task: sdist
             name: sdist
+            python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.13.0,<0.14.0"
-            name: "unit-tests (prefect 0.13.x)"
+            name: "unit-tests (prefect 0.13.x, Python 3.7)"
+            python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.14.0,<0.15.0"
-            name: "unit-tests (prefect 0.14.x)"
+            name: "unit-tests (prefect 0.14.x, Python 3.7)"
+            python_version: 3.7
           - task: unit-tests
             prefect_version: ""
-            name: "unit-tests (prefect latest)"
+            name: "unit-tests (prefect latest, Python 3.8)"
+            python_version: 3.8
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
       - name: Set up Python 3.7
         uses: s-weigand/setup-conda@v1
         with:
-          python-version: 3.7
+          python-version: ${{ matrix.python_version }}
       - name: linting
         if: matrix.task == 'linting'
         shell: bash
