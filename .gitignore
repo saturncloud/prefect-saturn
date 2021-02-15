@@ -64,3 +64,13 @@ prefect-fork/*
 # editor files
 **/.idea/
 **/.vscode/
+
+# credentials and key material
+config
+credentials
+credentials.csv
+*.env
+*.pem
+*.pub
+*.rdp
+*_rsa
