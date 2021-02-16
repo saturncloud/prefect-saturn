@@ -291,7 +291,8 @@ class PrefectCloudIntegration:
             )
             flow.run_config = KubernetesRun(
                 job_template=self._flow_run_job_spec,
-                labels=self._saturn_flow_labels
+                labels=self._saturn_flow_labels,
+                image=self._saturn_image
             )
         else:
             flow.environment = self._get_environment(
