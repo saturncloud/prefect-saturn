@@ -286,18 +286,17 @@ class PrefectCloudIntegration:
         if RUN_CONFIG_AVAILABLE:
             flow.executor = DaskExecutor(
                 cluster_class="dask_saturn.SaturnCluster",
-                cluster_kwargs=cluster_kwargs,
-                adapt_kwargs=adapt_kwargs,
+                cluster_kwargs=dask_cluster_kwargs,
+                adapt_kwargs=dask_adapt_kwargs,
             )
             flow.run_config = KubernetesRun(
                 job_template=self._flow_run_job_spec,
                 labels=self._saturn_flow_labels
             )
         else:
-            environment = self._get_environment(
+            flow.environment = self._get_environment(
                 cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs  # type: ignore
             )
-            flow.environment = environment
 
         return flow
 
