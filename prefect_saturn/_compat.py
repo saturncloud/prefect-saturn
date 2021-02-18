@@ -13,7 +13,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     from prefect.environments.storage import Webhook  # noqa: F401
 
-# prefect.engine.executors was depreacted in prefect 0.14.x
+# prefect.engine.executors was deprecated in prefect 0.14.x
 try:
     from prefect.executors import DaskExecutor  # noqa: F401
 except (ImportError, ModuleNotFoundError):
