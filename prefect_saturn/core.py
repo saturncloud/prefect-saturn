@@ -12,16 +12,18 @@ from requests.packages.urllib3.util.retry import Retry
 import cloudpickle
 from prefect import Flow
 from prefect.client import Client
+
 from ruamel import yaml
 
-from ._compat import DaskExecutor, RUN_CONFIG_AVAILABLE, Webhook
+from ._compat import DaskExecutor, KUBE_JOB_ENV_AVAILABLE, RUN_CONFIG_AVAILABLE, Webhook
 from .settings import Settings
 from .messages import Errors
 
 if RUN_CONFIG_AVAILABLE:
-    from prefect.run_configs import KubernetesRun
-else:
-    from prefect.environments import KubernetesJobEnvironment
+    from prefect.run_configs import KubernetesRun  # pylint: disable=ungrouped-imports
+
+if KUBE_JOB_ENV_AVAILABLE:
+    from prefect.environments import KubernetesJobEnvironment  # pylint: disable=ungrouped-imports
 
 
 def _session(token: str) -> Session:
@@ -223,8 +225,19 @@ class PrefectCloudIntegration:
         passed to it.
 
         * ``.storage``: a ``Webhook`` storage instance is added
+
+        If using ``prefect<0.14.0``
+
         * ``.environment``: a ``KubernetesJobEnvironment`` with a ``DaskExecutor``
             is added. This environment will use the same image as the notebook
+            from which this code is run.
+
+        If using ``prefect>=0.14.0``
+
+        * ``run_config``: a ``KubernetesRun`` is added, which by default will use
+            the same image, start script, and environment variables as the notebook
+            from which this code is run.
+        * ``executor``: a ``DaskExecutor``, which uses the same image as the notebook
             from which this code is run.
 
         Adaptive scaling is off by default
@@ -296,7 +309,7 @@ class PrefectCloudIntegration:
             flow.run_config = KubernetesRun(
                 job_template=self._flow_run_job_spec,
                 labels=self._saturn_flow_labels,
-                image=self._saturn_image
+                image=self._saturn_image,
             )
         else:
             flow.environment = self._get_environment(

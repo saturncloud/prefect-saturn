@@ -8,14 +8,22 @@ import uuid
 from typing import Any, Dict, Optional
 
 from prefect import task, Flow
-from prefect.environments import KubernetesJobEnvironment
-from pytest import raises
+from pytest import mark, raises
 from requests.exceptions import HTTPError
 from unittest.mock import patch
 from urllib.parse import urlparse
 from ruamel import yaml
 
-from prefect_saturn._compat import Webhook, DaskExecutor, RUN_CONFIG_AVAILABLE
+from prefect_saturn._compat import (
+    Webhook,
+    DaskExecutor,
+    KUBE_JOB_ENV_AVAILABLE,
+    RUN_CONFIG_AVAILABLE,
+)
+
+if KUBE_JOB_ENV_AVAILABLE:
+    from prefect.environments import KubernetesJobEnvironment
+
 if RUN_CONFIG_AVAILABLE:
     from prefect.run_configs import KubernetesRun
 
@@ -206,7 +214,7 @@ def test_hash_flow():
         # should not be impacted by environment of run_config
         if RUN_CONFIG_AVAILABLE:
             flow.run_config = KubernetesRun()
-        else:
+        elif KUBE_JOB_ENV_AVAILABLE:
             flow.environment = KubernetesJobEnvironment()
         assert flow_hash == integration._hash_flow(flow)
 
@@ -321,6 +329,10 @@ def test_store_flow_fails_if_validation_fails():
             flow.storage.build()
 
 
+@mark.skipif(
+    RUN_CONFIG_AVAILABLE,
+    reason="register_flow_with_saturn() using KubernetesRun instead of KubernetesJobEnvironment",
+)
 @responses.activate
 def test_get_environment():
     with patch("prefect_saturn.core.Client", new=MockClient):
@@ -349,7 +361,7 @@ def test_get_environment():
 
 
 @responses.activate
-def test_get_environment_dask_kwargs():
+def test_executor_dask_kwargs():
     with patch("prefect_saturn.core.Client", new=MockClient):
         responses.add(**REGISTER_FLOW_RESPONSE())
         responses.add(**BUILD_STORAGE_RESPONSE())
@@ -365,14 +377,20 @@ def test_get_environment_dask_kwargs():
             dask_adapt_kwargs={"minimum": 3, "maximum": 3},
         )
 
-        assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {"n_workers": 8, "autoclose": True}
-        assert flow.environment.executor.adapt_kwargs == {"minimum": 3, "maximum": 3}
+        if RUN_CONFIG_AVAILABLE:
+            assert isinstance(flow.run_config, KubernetesRun)
+            executor = flow.executor
+        else:
+            assert isinstance(flow.environment, KubernetesJobEnvironment)
+            executor = flow.environment.executor
+
+        assert isinstance(executor, DaskExecutor)
+        assert executor.cluster_kwargs == {"n_workers": 8, "autoclose": True}
+        assert executor.adapt_kwargs == {"minimum": 3, "maximum": 3}
 
 
 @responses.activate
-def test_get_environment_dask_adaptive_scaling_and_autoclosing_off_by_default():
+def test_dask_adaptive_scaling_and_autoclosing_off_by_default():
     with patch("prefect_saturn.core.Client", new=MockClient):
         responses.add(**REGISTER_FLOW_RESPONSE())
         responses.add(**BUILD_STORAGE_RESPONSE())
@@ -384,10 +402,16 @@ def test_get_environment_dask_adaptive_scaling_and_autoclosing_off_by_default():
         flow = TEST_FLOW.copy()
         flow = integration.register_flow_with_saturn(flow=flow)
 
-        assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {"n_workers": 1, "autoclose": False}
-        assert flow.environment.executor.adapt_kwargs == {}
+        if RUN_CONFIG_AVAILABLE:
+            assert isinstance(flow.run_config, KubernetesRun)
+            executor = flow.executor
+        else:
+            assert isinstance(flow.environment, KubernetesJobEnvironment)
+            executor = flow.environment.executor
+
+        assert isinstance(executor, DaskExecutor)
+        assert executor.cluster_kwargs == {"n_workers": 1, "autoclose": False}
+        assert executor.adapt_kwargs == {}
 
 
 @responses.activate
@@ -405,10 +429,16 @@ def test_get_environment_dask_kwargs_respects_empty_dict():
             flow=flow, dask_cluster_kwargs={}, dask_adapt_kwargs={}
         )
 
-        assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {}
-        assert flow.environment.executor.adapt_kwargs == {}
+        if RUN_CONFIG_AVAILABLE:
+            assert isinstance(flow.run_config, KubernetesRun)
+            executor = flow.executor
+        else:
+            assert isinstance(flow.environment, KubernetesJobEnvironment)
+            executor = flow.environment.executor
+
+        assert isinstance(executor, DaskExecutor)
+        assert executor.cluster_kwargs == {}
+        assert executor.adapt_kwargs == {}
 
 
 def test_get_environment_fails_if_flow_not_registered():
@@ -479,8 +509,12 @@ def test_register_flow_with_saturn_does_everything():
         assert integration._saturn_flow_version_id == TEST_FLOW_VERSION_ID
         assert integration._saturn_image == TEST_IMAGE
         assert isinstance(flow.storage, Webhook)
-        assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
+        if RUN_CONFIG_AVAILABLE:
+            assert isinstance(flow.run_config, KubernetesRun)
+            assert isinstance(flow.executor, DaskExecutor)
+        else:
+            assert isinstance(flow.environment, KubernetesJobEnvironment)
+            assert isinstance(flow.environment.executor, DaskExecutor)
 
 
 @responses.activate
