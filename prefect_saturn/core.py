@@ -12,12 +12,16 @@ from requests.packages.urllib3.util.retry import Retry
 import cloudpickle
 from prefect import Flow
 from prefect.client import Client
-from prefect.environments import KubernetesJobEnvironment
 from ruamel import yaml
 
-from ._compat import DaskExecutor, KubernetesRun, RUN_CONFIG_AVAILABLE, Webhook
+from ._compat import DaskExecutor, RUN_CONFIG_AVAILABLE, Webhook
 from .settings import Settings
 from .messages import Errors
+
+if RUN_CONFIG_AVAILABLE:
+    from prefect.run_configs import KubernetesRun
+else:
+    from prefect.environments import KubernetesJobEnvironment
 
 
 def _session(token: str) -> Session:
@@ -346,7 +350,7 @@ class PrefectCloudIntegration:
         self,
         cluster_kwargs: Dict[str, Any],
         adapt_kwargs: Dict[str, Any],
-    ) -> KubernetesJobEnvironment:
+    ):
         """
         Get an environment that customizes the execution of a Prefect flow run.
         """

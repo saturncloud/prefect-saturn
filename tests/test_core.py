@@ -15,7 +15,9 @@ from unittest.mock import patch
 from urllib.parse import urlparse
 from ruamel import yaml
 
-from prefect_saturn._compat import Webhook, DaskExecutor
+from prefect_saturn._compat import Webhook, DaskExecutor, RUN_CONFIG_AVAILABLE
+if RUN_CONFIG_AVAILABLE:
+    from prefect.run_configs import KubernetesRun
 
 FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 
@@ -201,8 +203,11 @@ def test_hash_flow():
         )
         assert flow_hash == integration._hash_flow(flow)
 
-        # should not be impacted by environment
-        flow.environment = KubernetesJobEnvironment()
+        # should not be impacted by environment of run_config
+        if RUN_CONFIG_AVAILABLE:
+            flow.run_config = KubernetesRun()
+        else:
+            flow.environment = KubernetesJobEnvironment()
         assert flow_hash == integration._hash_flow(flow)
 
         # should not change if you add a new task
