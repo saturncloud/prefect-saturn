@@ -36,7 +36,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
-    keywords="saturn cloud prefect prefect",
+    keywords=["data-engineering", "prefect", "prefect-cloud", "saturn-cloud"],
     description="Client library for running Prefect Cloud flows in Saturn Cloud",
     long_description=readme,
     long_description_content_type="text/markdown",
