@@ -361,9 +361,11 @@ def test_get_environment_dask_kwargs():
         )
 
         assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {"n_workers": 8, "autoclose": True}
-        assert flow.environment.executor.adapt_kwargs == {"minimum": 3, "maximum": 3}
+
+        executor = flow.environment.executor
+        assert isinstance(executor, DaskExecutor)
+        assert executor.cluster_kwargs == {"n_workers": 8, "autoclose": True}
+        assert executor.adapt_kwargs == {"minimum": 3, "maximum": 3}
 
 
 @responses.activate
@@ -380,9 +382,11 @@ def test_get_environment_dask_adaptive_scaling_and_autoclosing_off_by_default():
         flow = integration.register_flow_with_saturn(flow=flow)
 
         assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {"n_workers": 1, "autoclose": False}
-        assert flow.environment.executor.adapt_kwargs == {}
+
+        executor = flow.environment.executor
+        assert isinstance(executor, DaskExecutor)
+        assert executor.cluster_kwargs == {"n_workers": 1, "autoclose": False}
+        assert executor.adapt_kwargs == {}
 
 
 @responses.activate
@@ -401,9 +405,11 @@ def test_get_environment_dask_kwargs_respects_empty_dict():
         )
 
         assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
-        assert flow.environment.executor.cluster_kwargs == {}
-        assert flow.environment.executor.adapt_kwargs == {}
+
+        executor = flow.environment.executor
+        assert isinstance(executor, DaskExecutor)
+        assert executor.cluster_kwargs == {}
+        assert executor.adapt_kwargs == {}
 
 
 def test_get_environment_fails_if_flow_not_registered():
@@ -475,7 +481,9 @@ def test_register_flow_with_saturn_does_everything():
         assert integration._saturn_image == TEST_IMAGE
         assert isinstance(flow.storage, Webhook)
         assert isinstance(flow.environment, KubernetesJobEnvironment)
-        assert isinstance(flow.environment.executor, DaskExecutor)
+
+        executor = flow.environment.executor
+        assert isinstance(executor, DaskExecutor)
 
 
 @responses.activate
