@@ -284,7 +284,7 @@ class PrefectCloudIntegration:
         flow.storage = storage
 
         environment = self._get_environment(
-            cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs  # type: ignore
+            cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs
         )
         flow.environment = environment
 
