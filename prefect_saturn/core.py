@@ -322,6 +322,15 @@ class PrefectCloudIntegration:
 
         return storage
 
+    @property
+    def _flow_run_job_spec(self) -> Dict[str, Any]:
+        """k8s job spec with Saturn details"""
+        url = f"{self._settings.BASE_URL}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
+        response = self._session.get(url=url)
+        response.raise_for_status()
+        job_dict = response.json()
+        return job_dict
+
     def _get_environment(
         self,
         cluster_kwargs: Dict[str, Any],
@@ -331,15 +340,9 @@ class PrefectCloudIntegration:
         Get an environment that customizes the execution of a Prefect flow run.
         """
 
-        # get job spec with Saturn details from Atlas
-        url = f"{self._settings.BASE_URL}/api/prefect_cloud/flows/{self.flow_id}/run_job_spec"
-        response = self._session.get(url=url)
-        response.raise_for_status()
-        job_dict = response.json()
-
         local_tmp_file = "/tmp/prefect-flow-run.yaml"
         with open(local_tmp_file, "w") as f:
-            yaml.dump(job_dict, stream=f, Dumper=yaml.RoundTripDumper)
+            yaml.dump(self._flow_run_job_spec, stream=f, Dumper=yaml.RoundTripDumper)
 
         # saturn_flow_id is used by Saturn's custom Prefect agent
         k8s_environment = KubernetesJobEnvironment(
