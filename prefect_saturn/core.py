@@ -313,7 +313,7 @@ class PrefectCloudIntegration:
             )
         else:
             flow.environment = self._get_environment(
-                cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs  # type: ignore
+                cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs
             )
 
         return flow
@@ -367,6 +367,7 @@ class PrefectCloudIntegration:
         """
         Get an environment that customizes the execution of a Prefect flow run.
         """
+
         local_tmp_file = "/tmp/prefect-flow-run.yaml"
         with open(local_tmp_file, "w") as f:
             yaml.dump(self._flow_run_job_spec, stream=f, Dumper=yaml.RoundTripDumper)

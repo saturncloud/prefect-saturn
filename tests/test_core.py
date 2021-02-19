@@ -509,6 +509,7 @@ def test_register_flow_with_saturn_does_everything():
         assert integration._saturn_flow_version_id == TEST_FLOW_VERSION_ID
         assert integration._saturn_image == TEST_IMAGE
         assert isinstance(flow.storage, Webhook)
+
         if RUN_CONFIG_AVAILABLE:
             assert isinstance(flow.run_config, KubernetesRun)
             assert isinstance(flow.executor, DaskExecutor)
