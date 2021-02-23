@@ -211,7 +211,7 @@ def test_hash_flow():
         )
         assert flow_hash == integration._hash_flow(flow)
 
-        # should not be impacted by environment of run_config
+        # should not be impacted by environment or run_config
         if RUN_CONFIG_AVAILABLE:
             flow.run_config = KubernetesRun()
         elif KUBE_JOB_ENV_AVAILABLE:
