@@ -12,12 +12,18 @@ from requests.packages.urllib3.util.retry import Retry
 import cloudpickle
 from prefect import Flow
 from prefect.client import Client
-from prefect.environments import KubernetesJobEnvironment
+
 from ruamel import yaml
 
-from ._compat import DaskExecutor, Webhook
+from ._compat import DaskExecutor, KUBE_JOB_ENV_AVAILABLE, RUN_CONFIG_AVAILABLE, Webhook
 from .settings import Settings
 from .messages import Errors
+
+if RUN_CONFIG_AVAILABLE:
+    from prefect.run_configs import KubernetesRun  # pylint: disable=ungrouped-imports
+
+if KUBE_JOB_ENV_AVAILABLE:
+    from prefect.environments import KubernetesJobEnvironment  # pylint: disable=ungrouped-imports
 
 
 def _session(token: str) -> Session:
@@ -219,8 +225,19 @@ class PrefectCloudIntegration:
         passed to it.
 
         * ``.storage``: a ``Webhook`` storage instance is added
+
+        If using ``prefect<0.14.0``
+
         * ``.environment``: a ``KubernetesJobEnvironment`` with a ``DaskExecutor``
             is added. This environment will use the same image as the notebook
+            from which this code is run.
+
+        If using ``prefect>=0.14.0``
+
+        * ``run_config``: a ``KubernetesRun`` is added, which by default will use
+            the same image, start script, and environment variables as the notebook
+            from which this code is run.
+        * ``executor``: a ``DaskExecutor``, which uses the same image as the notebook
             from which this code is run.
 
         Adaptive scaling is off by default
@@ -283,10 +300,21 @@ class PrefectCloudIntegration:
         storage = self._get_storage()
         flow.storage = storage
 
-        environment = self._get_environment(
-            cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs
-        )
-        flow.environment = environment
+        if RUN_CONFIG_AVAILABLE:
+            flow.executor = DaskExecutor(
+                cluster_class="dask_saturn.SaturnCluster",
+                cluster_kwargs=dask_cluster_kwargs,
+                adapt_kwargs=dask_adapt_kwargs,
+            )
+            flow.run_config = KubernetesRun(
+                job_template=self._flow_run_job_spec,
+                labels=self._saturn_flow_labels,
+                image=self._saturn_image,
+            )
+        else:
+            flow.environment = self._get_environment(
+                cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs
+            )
 
         return flow
 
@@ -335,7 +363,7 @@ class PrefectCloudIntegration:
         self,
         cluster_kwargs: Dict[str, Any],
         adapt_kwargs: Dict[str, Any],
-    ) -> KubernetesJobEnvironment:
+    ):
         """
         Get an environment that customizes the execution of a Prefect flow run.
         """
