@@ -80,3 +80,4 @@ This section describes how to release a new version of `prefect-saturn` to PyPi.
     - the tag should be a version number, like `v0.0.1`
     - choose the target from "recent commits", and select the most recent commit on `main`
 3. Once this release is created, a GitHub Actions build will automatically start. That build publishes a release to PyPi.
+4. When a release has been created, open a new pull request that appens a `.9000` to the end of the version number in `VERSION`. This guarantees that installations from version control will always know that they have a newer version than any available on package managers.
