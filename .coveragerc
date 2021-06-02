@@ -1,7 +1,9 @@
 # .coveragerc explained
-#     - https://coverage.readthedocs.io/en/coverage-4.2/config.html
-#     - https://coverage.readthedocs.io/en/coverage-4.2/source.html#source
+#     - https://coverage.readthedocs.io/en/coverage-5.5/config.html
 
 [run]
+include =
+    *prefect_saturn/*
+
 omit =
-    *_compat.py
+    */_compat.py
