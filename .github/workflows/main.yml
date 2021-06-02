@@ -29,8 +29,8 @@ jobs:
             python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.13.0,<0.14.0"
-            ruamel_yaml_version: "<0.17.0"
-            name: "unit-tests (prefect 0.13.x, ruamel.yaml 0.16.x, Python 3.7)"
+            ruamel_yaml_version: "==0.16.0"
+            name: "unit-tests (prefect 0.13.x, ruamel.yaml 0.16.0, Python 3.7)"
             python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.14.0,<0.15.0"
