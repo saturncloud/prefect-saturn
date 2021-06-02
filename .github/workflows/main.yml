@@ -55,6 +55,13 @@ jobs:
         run: |
           pip install --upgrade black flake8 mypy pylint
           make lint
+      # resolves error:
+      # "Cannot uninstall 'ruamel-yaml'. It is a distutils installed project"
+      - name: remove old ruamel.yaml
+        shell: bash
+        run: |
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          find ${SITE_PACKAGES} -type f,l -name 'ruamel*' -delete
       - name: unit-tests
         if: matrix.task == 'unit-tests'
         shell: bash
