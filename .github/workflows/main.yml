@@ -60,7 +60,8 @@ jobs:
         shell: bash
         run: |
           pip install -I --upgrade -e .[test]
-          pip install -I --upgrade 'ruamel.yaml${{ matrix.ruamel_yaml_version }}'
+          pip uninstall -y ruamel.yaml
+          pip install -I 'ruamel.yaml${{ matrix.ruamel_yaml_version }}'
           make unit-tests
       - name: test source distribution
         if: matrix.task == 'sdist'
