@@ -29,15 +29,18 @@ jobs:
             python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.13.0,<0.14.0"
-            name: "unit-tests (prefect 0.13.x, Python 3.7)"
+            ruamel_yaml_version: "<0.17.0"
+            name: "unit-tests (prefect 0.13.x, ruamel.yaml 0.16.x, Python 3.7)"
             python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.14.0,<0.15.0"
-            name: "unit-tests (prefect 0.14.x, Python 3.7)"
+            ruamel_yaml_version: ">=0.17.7"
+            name: "unit-tests (prefect 0.14.x, ruamel.yaml latest, Python 3.7)"
             python_version: 3.7
           - task: unit-tests
             prefect_version: ""
-            name: "unit-tests (prefect latest, Python 3.8)"
+            ruamel_yaml_version: ">=0.17.7"
+            name: "unit-tests (prefect latest, ruamel.yaml latest, Python 3.8)"
             python_version: 3.8
     steps:
       - name: Checkout repository
@@ -57,6 +60,7 @@ jobs:
         shell: bash
         run: |
           pip install -I --upgrade -e .[test]
+          pip install -I --upgrade 'ruamel.yaml${{ matrix.ruamel_yaml_version }}'
           make unit-tests
       - name: test source distribution
         if: matrix.task == 'sdist'
