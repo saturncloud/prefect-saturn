@@ -6,4 +6,4 @@ include =
     *prefect_saturn/*
 
 omit =
-    */_compat.py
+    *_compat.py
