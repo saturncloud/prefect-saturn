@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.7
-      uses: actions/setup-python@v1
+      uses: conda-incubator/setup-miniconda@v2
       with:
         python-version: 3.7
     - name: Install build dependencies
@@ -28,7 +28,7 @@ jobs:
         sdist
         bdist_wheel
     - name: Publish distribution to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.3.1
+      uses: pypa/gh-action-pypi-publish@v1.4.2
       with:
         # Password is set in GitHub UI to an API secret for pypi
         user: __token__
