@@ -56,7 +56,7 @@ jobs:
         if: matrix.task == 'unit-tests'
         shell: bash
         run: |
-          pip install -I --upgrade -e .[test]
+          pip install -I --upgrade .[test]
           make unit-tests
       - name: test source distribution
         if: matrix.task == 'sdist'
