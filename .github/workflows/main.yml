@@ -29,15 +29,18 @@ jobs:
             python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.13.0,<0.14.0"
-            name: "unit-tests (prefect 0.13.x, Python 3.7)"
+            ruamel_yaml_version: "==0.16.0"
+            name: "unit-tests (prefect 0.13.x, ruamel.yaml 0.16.0, Python 3.7)"
             python_version: 3.7
           - task: unit-tests
             prefect_version: ">0.14.0,<0.15.0"
-            name: "unit-tests (prefect 0.14.x, Python 3.7)"
+            ruamel_yaml_version: ">=0.17.7"
+            name: "unit-tests (prefect 0.14.x, ruamel.yaml latest, Python 3.7)"
             python_version: 3.7
           - task: unit-tests
             prefect_version: ""
-            name: "unit-tests (prefect latest, Python 3.8)"
+            ruamel_yaml_version: ">=0.17.7"
+            name: "unit-tests (prefect latest, ruamel.yaml latest, Python 3.8)"
             python_version: 3.8
     steps:
       - name: Checkout repository
@@ -52,11 +55,20 @@ jobs:
         run: |
           pip install --upgrade black flake8 mypy pylint
           make lint
+      # resolves error:
+      # "Cannot uninstall 'ruamel-yaml'. It is a distutils installed project"
+      - name: remove old ruamel.yaml
+        shell: bash
+        run: |
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          find ${SITE_PACKAGES} -type f,l -name 'ruamel*' -delete
       - name: unit-tests
         if: matrix.task == 'unit-tests'
         shell: bash
         run: |
           pip install -I --upgrade .[test]
+          pip uninstall -y ruamel.yaml
+          pip install -I 'ruamel.yaml${{ matrix.ruamel_yaml_version }}'
           make unit-tests
       - name: test source distribution
         if: matrix.task == 'sdist'

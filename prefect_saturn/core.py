@@ -13,7 +13,7 @@ import cloudpickle
 from prefect import Flow
 from prefect.client import Client
 
-from ruamel import yaml
+from ruamel.yaml import YAML
 
 from ._compat import DaskExecutor, KUBE_JOB_ENV_AVAILABLE, RUN_CONFIG_AVAILABLE, Webhook
 from .settings import Settings
@@ -370,7 +370,7 @@ class PrefectCloudIntegration:
 
         local_tmp_file = "/tmp/prefect-flow-run.yaml"
         with open(local_tmp_file, "w") as f:
-            yaml.dump(self._flow_run_job_spec, stream=f, Dumper=yaml.RoundTripDumper)
+            YAML().dump(self._flow_run_job_spec, stream=f)
 
         # saturn_flow_id is used by Saturn's custom Prefect agent
         k8s_environment = KubernetesJobEnvironment(
