@@ -12,6 +12,7 @@ format:
 
 .PHONY: lint
 lint:
+	pip install types-requests
 	flake8 --count .
 	black --check --diff .
 	mypy .
