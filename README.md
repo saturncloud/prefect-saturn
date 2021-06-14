@@ -1,6 +1,7 @@
 # prefect-saturn
 
-![GitHub Actions](https://github.com/saturncloud/prefect-saturn/workflows/GitHub%20Actions/badge.svg) [![PyPI Version](https://img.shields.io/pypi/v/prefect-saturn.svg)](https://pypi.org/project/prefect-saturn)
+[![GitHub Actions](https://github.com/saturncloud/prefect-saturn/workflows/GitHub%20Actions/badge.svg)](https://github.com/saturncloud/prefect-saturn/actions/workflows/main.yml?query=branch%3Amain)
+[![PyPI Version](https://img.shields.io/pypi/v/prefect-saturn.svg)](https://pypi.org/project/prefect-saturn)
 
 `prefect-saturn` is a Python package that makes it easy to run [Prefect Cloud](https://www.prefect.io/cloud/) flows on a Dask cluster with [Saturn Cloud](https://www.saturncloud.io/). For a detailed tutorial, see ["Fault-Tolerant Data Pipelines with Prefect Cloud
 "](https://www.saturncloud.io/docs/tutorials/prefect-cloud/).
