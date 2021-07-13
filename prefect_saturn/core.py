@@ -106,7 +106,7 @@ class PrefectCloudIntegration:
         identifying_content = [
             self.prefect_cloud_project_name,
             flow.name,
-            Client()._active_tenant_id,  # pylint: disable=protected-access
+            Client().tenant_id,
         ]
         hasher = hashlib.sha256()
         hasher.update(cloudpickle.dumps(identifying_content))
