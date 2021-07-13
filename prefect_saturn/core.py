@@ -7,7 +7,6 @@ import hashlib
 from typing import Any, Dict, List, Optional, Union
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 
 import cloudpickle
 from prefect import Flow
@@ -27,7 +26,7 @@ if KUBE_JOB_ENV_AVAILABLE:
 
 
 def _session(token: str) -> Session:
-    retry_logic = HTTPAdapter(max_retries=Retry(total=3))
+    retry_logic = HTTPAdapter(max_retries=3)
     session = Session()
     session.mount("http://", retry_logic)
     session.mount("https://", retry_logic)
