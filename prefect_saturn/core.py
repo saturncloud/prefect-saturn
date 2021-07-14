@@ -109,7 +109,7 @@ class PrefectCloudIntegration:
         """
         prefect_version = Version(version("prefect"))
 
-        if prefect_version >= parse("0.13.0") and prefect_version < parse("0.15.0"):
+        if parse("0.13.0") <= prefect_version < parse("0.15.0"):
             tenant_id = Client()._active_tenant_id  # type: ignore
         elif prefect_version >= parse("0.15.0"):
             tenant_id = Client().tenant_id  # type: ignore

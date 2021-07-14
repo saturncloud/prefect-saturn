@@ -263,7 +263,7 @@ def test_hash_flow_hash_changes_if_tenant_id_changes():
 
     class OtherMockClient:
         def __init__(self):
-            if PREFECT_VERSION >= parse("0.13.0") and PREFECT_VERSION < parse("0.15.0"):
+            if parse("0.13.0") <= PREFECT_VERSION < parse("0.15.0"):
                 self._active_tenant_id = "some-other-garbage"
             elif PREFECT_VERSION >= parse("0.15.0"):
                 self.tenant_id = "some-other-garbage"
