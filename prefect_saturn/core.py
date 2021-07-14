@@ -12,6 +12,9 @@ import cloudpickle
 from prefect import Flow
 from prefect.client import Client
 
+from importlib.metadata import version
+from packaging.version import Version, parse
+
 from ruamel.yaml import YAML
 
 from ._compat import DaskExecutor, KUBE_JOB_ENV_AVAILABLE, RUN_CONFIG_AVAILABLE, Webhook
@@ -104,10 +107,17 @@ class PrefectCloudIntegration:
         flow with a given name, in a given Prefect Cloud project, for a given
         Prefect Cloud tenant.
         """
+        prefect_version = Version(version("prefect"))
+
+        if prefect_version >= parse("0.13.0") and prefect_version < parse("0.15.0"):
+            tenant_id = Client()._active_tenant_id  # type: ignore
+        elif prefect_version >= parse("0.15.0"):
+            tenant_id = Client().tenant_id  # type: ignore
+
         identifying_content = [
             self.prefect_cloud_project_name,
             flow.name,
-            Client().tenant_id,
+            tenant_id,
         ]
         hasher = hashlib.sha256()
         hasher.update(cloudpickle.dumps(identifying_content))

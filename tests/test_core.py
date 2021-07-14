@@ -4,6 +4,8 @@ import prefect_saturn
 import random
 import responses
 import uuid
+from importlib.metadata import version
+from packaging.version import Version, parse
 
 from typing import Any, Dict, Optional
 
@@ -26,6 +28,8 @@ if KUBE_JOB_ENV_AVAILABLE:
 
 if RUN_CONFIG_AVAILABLE:
     from prefect.run_configs import KubernetesRun
+
+PREFECT_VERSION = Version(version("prefect"))
 
 FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 
@@ -140,8 +144,10 @@ def SERVER_SIZES_RESPONSE(status: int) -> Dict[str, Any]:
 
 class MockClient:
     def __init__(self):
-        self._active_tenant_id = "543c5453-0a47-496a-9c61-a6765acef352"
-        pass
+        if PREFECT_VERSION >= parse("0.13.0") and PREFECT_VERSION < parse("0.15.0"):
+            self._active_tenant_id = "543c5453-0a47-496a-9c61-a6765acef352"
+        elif PREFECT_VERSION >= parse("0.15.0"):
+            self.tenant_id = "543c5453-0a47-496a-9c61-a6765acef352"
 
 
 def test_initialize():
@@ -257,7 +263,10 @@ def test_hash_flow_hash_changes_if_tenant_id_changes():
 
     class OtherMockClient:
         def __init__(self):
-            self._active_tenant_id = "some-other-garbage"
+            if PREFECT_VERSION >= parse("0.13.0") and PREFECT_VERSION < parse("0.15.0"):
+                self._active_tenant_id = "some-other-garbage"
+            elif PREFECT_VERSION >= parse("0.15.0"):
+                self.tenant_id = "some-other-garbage"
 
     with patch("prefect_saturn.core.Client", new=OtherMockClient):
         new_flow_hash = integration._hash_flow(flow)
