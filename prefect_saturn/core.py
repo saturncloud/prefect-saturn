@@ -38,7 +38,8 @@ def describe_sizes() -> Dict[str, Any]:
     """Returns available instance sizes for flows and dask clusters"""
     settings = Settings()
     res = _session(settings.SATURN_TOKEN).get(
-        url=f"{settings.BASE_URL}/api/info/servers", headers={"Content-Type": "application/json"},
+        url=f"{settings.BASE_URL}/api/info/servers",
+        headers={"Content-Type": "application/json"},
     )
     res.raise_for_status()
     response_json = res.json()
@@ -358,7 +359,9 @@ class PrefectCloudIntegration:
         return job_dict
 
     def _get_environment(
-        self, cluster_kwargs: Dict[str, Any], adapt_kwargs: Dict[str, Any],
+        self,
+        cluster_kwargs: Dict[str, Any],
+        adapt_kwargs: Dict[str, Any],
     ):
         """
         Get an environment that customizes the execution of a Prefect flow run.

@@ -51,7 +51,8 @@ TEST_FLOW = Flow(TEST_FLOW_NAME, tasks=[hello_task])
 # /api/prefect_cloud/flows #
 # ------------------------ #
 def REGISTER_FLOW_RESPONSE(
-    flow_id: Optional[str] = None, status: Optional[int] = None,
+    flow_id: Optional[str] = None,
+    status: Optional[int] = None,
 ) -> Dict[str, Any]:
     return {
         "method": responses.PUT,
