@@ -7,11 +7,13 @@ import hashlib
 from typing import Any, Dict, List, Optional, Union
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 
 import cloudpickle
+import prefect
 from prefect import Flow
 from prefect.client import Client
+
+from packaging.version import Version, parse
 
 from ruamel.yaml import YAML
 
@@ -27,7 +29,7 @@ if KUBE_JOB_ENV_AVAILABLE:
 
 
 def _session(token: str) -> Session:
-    retry_logic = HTTPAdapter(max_retries=Retry(total=3))
+    retry_logic = HTTPAdapter(max_retries=3)
     session = Session()
     session.mount("http://", retry_logic)
     session.mount("https://", retry_logic)
@@ -105,10 +107,17 @@ class PrefectCloudIntegration:
         flow with a given name, in a given Prefect Cloud project, for a given
         Prefect Cloud tenant.
         """
+        prefect_version = Version(prefect.__version__)
+
+        if prefect_version < parse("0.15.0"):
+            tenant_id = Client()._active_tenant_id  # type: ignore # pylint: disable=no-member
+        else:
+            tenant_id = Client().tenant_id  # type: ignore
+
         identifying_content = [
             self.prefect_cloud_project_name,
             flow.name,
-            Client()._active_tenant_id,  # pylint: disable=protected-access
+            tenant_id,
         ]
         hasher = hashlib.sha256()
         hasher.update(cloudpickle.dumps(identifying_content))

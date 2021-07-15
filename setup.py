@@ -11,6 +11,7 @@ with open("VERSION", "r") as f:
 install_requires = [
     "cloudpickle",
     "dask-saturn>=0.0.4",
+    "packaging",
     "prefect>0.13.0",
     "requests",
     "ruamel.yaml",
