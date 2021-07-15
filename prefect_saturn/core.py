@@ -5,11 +5,11 @@ This module contains the user-facing API for ``prefect-saturn``.
 import hashlib
 
 from typing import Any, Dict, List, Optional, Union
-from importlib.metadata import version
 from requests import Session
 from requests.adapters import HTTPAdapter
 
 import cloudpickle
+import prefect
 from prefect import Flow
 from prefect.client import Client
 
@@ -107,7 +107,7 @@ class PrefectCloudIntegration:
         flow with a given name, in a given Prefect Cloud project, for a given
         Prefect Cloud tenant.
         """
-        prefect_version = Version(version("prefect"))
+        prefect_version = Version(prefect.__version__)
 
         if parse("0.13.0") <= prefect_version < parse("0.15.0"):
             tenant_id = Client()._active_tenant_id  # type: ignore # pylint: disable=no-member

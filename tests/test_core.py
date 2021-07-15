@@ -4,7 +4,6 @@ import prefect_saturn
 import random
 import responses
 import uuid
-from importlib.metadata import version
 from packaging.version import Version, parse
 
 from typing import Any, Dict, Optional
@@ -29,7 +28,7 @@ if KUBE_JOB_ENV_AVAILABLE:
 if RUN_CONFIG_AVAILABLE:
     from prefect.run_configs import KubernetesRun
 
-PREFECT_VERSION = Version(version("prefect"))
+PREFECT_VERSION = Version(prefect.__version__)
 
 FLOW_LABELS = [urlparse(os.environ["BASE_URL"]).hostname, "saturn-cloud", "webhook-flow-storage"]
 
