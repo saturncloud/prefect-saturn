@@ -109,9 +109,9 @@ class PrefectCloudIntegration:
         """
         prefect_version = Version(prefect.__version__)
 
-        if parse("0.13.0") <= prefect_version < parse("0.15.0"):
+        if prefect_version < parse("0.15.0"):
             tenant_id = Client()._active_tenant_id  # type: ignore # pylint: disable=no-member
-        elif prefect_version >= parse("0.15.0"):
+        else:
             tenant_id = Client().tenant_id  # type: ignore
 
         identifying_content = [

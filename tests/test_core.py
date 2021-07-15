@@ -143,9 +143,9 @@ def SERVER_SIZES_RESPONSE(status: int) -> Dict[str, Any]:
 
 class MockClient:
     def __init__(self):
-        if PREFECT_VERSION >= parse("0.13.0") and PREFECT_VERSION < parse("0.15.0"):
+        if PREFECT_VERSION < parse("0.15.0"):
             self._active_tenant_id = "543c5453-0a47-496a-9c61-a6765acef352"
-        elif PREFECT_VERSION >= parse("0.15.0"):
+        else:
             self.tenant_id = "543c5453-0a47-496a-9c61-a6765acef352"
 
 
@@ -262,9 +262,9 @@ def test_hash_flow_hash_changes_if_tenant_id_changes():
 
     class OtherMockClient:
         def __init__(self):
-            if parse("0.13.0") <= PREFECT_VERSION < parse("0.15.0"):
+            if PREFECT_VERSION < parse("0.15.0"):
                 self._active_tenant_id = "some-other-garbage"
-            elif PREFECT_VERSION >= parse("0.15.0"):
+            else:
                 self.tenant_id = "some-other-garbage"
 
     with patch("prefect_saturn.core.Client", new=OtherMockClient):
