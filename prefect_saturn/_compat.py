@@ -15,9 +15,9 @@ except (ImportError, ModuleNotFoundError):
 
 # prefect.engine.executors was deprecated in prefect 0.14.x
 try:
-    from prefect.executors import DaskExecutor  # noqa: F401
+    from prefect.executors import DaskExecutor, LocalExecutor  # noqa: F401
 except (ImportError, ModuleNotFoundError):
-    from prefect.engine.executors import DaskExecutor  # noqa: F401
+    from prefect.engine.executors import DaskExecutor, LocalExecutor  # noqa: F401
 
 # prefect.run_configs was introduced in prefect 0.13.10
 try:

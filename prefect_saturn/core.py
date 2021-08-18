@@ -17,7 +17,13 @@ from packaging.version import Version, parse
 
 from ruamel.yaml import YAML
 
-from ._compat import DaskExecutor, KUBE_JOB_ENV_AVAILABLE, RUN_CONFIG_AVAILABLE, Webhook
+from ._compat import (
+    DaskExecutor,
+    LocalExecutor,
+    KUBE_JOB_ENV_AVAILABLE,
+    RUN_CONFIG_AVAILABLE,
+    Webhook,
+)
 from .settings import Settings
 from .messages import Errors
 
@@ -297,8 +303,9 @@ class PrefectCloudIntegration:
         storage = self._get_storage()
         flow.storage = storage
 
-        executor = None
-        if dask_cluster_kwargs:
+        executor: Union[LocalExecutor, DaskExecutor] = LocalExecutor()
+
+        if dask_cluster_kwargs is not None:
             if dask_adapt_kwargs is None:
                 dask_adapt_kwargs = {}
 
@@ -309,8 +316,7 @@ class PrefectCloudIntegration:
             )
 
         if RUN_CONFIG_AVAILABLE:
-            if executor:
-                flow.executor = executor
+            flow.executor = executor
 
             flow.run_config = KubernetesRun(
                 job_template=self._flow_run_job_spec,
@@ -363,7 +369,7 @@ class PrefectCloudIntegration:
         job_dict = response.json()
         return job_dict
 
-    def _get_environment(self, executor: Optional[DaskExecutor] = None):
+    def _get_environment(self, executor: Union[LocalExecutor, DaskExecutor]):
         """
         Get an environment that customizes the execution of a Prefect flow run.
         """
