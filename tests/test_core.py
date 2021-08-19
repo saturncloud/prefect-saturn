@@ -355,7 +355,7 @@ def test_get_environment():
         flow = TEST_FLOW.copy()
         integration.register_flow_with_saturn(flow=flow)
         executor = DaskExecutor(
-            luster_class="dask_saturn.SaturnCluster",
+            cluster_class="dask_saturn.SaturnCluster",
             cluster_kwargs={"n_workers": 3},
             adapt_kwargs={},
         )
