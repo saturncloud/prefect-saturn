@@ -18,6 +18,7 @@ from ruamel.yaml import YAML
 from prefect_saturn._compat import (
     Webhook,
     DaskExecutor,
+    LocalExecutor,
     KUBE_JOB_ENV_AVAILABLE,
     RUN_CONFIG_AVAILABLE,
 )
@@ -353,8 +354,12 @@ def test_get_environment():
         )
         flow = TEST_FLOW.copy()
         integration.register_flow_with_saturn(flow=flow)
-
-        environment = integration._get_environment(cluster_kwargs={"n_workers": 3}, adapt_kwargs={})
+        executor = DaskExecutor(
+            cluster_class="dask_saturn.SaturnCluster",
+            cluster_kwargs={"n_workers": 3},
+            adapt_kwargs={},
+        )
+        environment = integration._get_environment(executor)
         assert isinstance(environment, KubernetesJobEnvironment)
         assert environment.unique_job_name is True
         env_args = environment._job_spec["spec"]["template"]["spec"]["containers"][0]["args"]
@@ -398,7 +403,7 @@ def test_executor_dask_kwargs():
 
 
 @responses.activate
-def test_dask_adaptive_scaling_and_autoclosing_off_by_default():
+def test_dask_off_by_default():
     with patch("prefect_saturn.core.Client", new=MockClient):
         responses.add(**REGISTER_FLOW_RESPONSE())
         responses.add(**BUILD_STORAGE_RESPONSE())
@@ -417,9 +422,7 @@ def test_dask_adaptive_scaling_and_autoclosing_off_by_default():
             assert isinstance(flow.environment, KubernetesJobEnvironment)
             executor = flow.environment.executor
 
-        assert isinstance(executor, DaskExecutor)
-        assert executor.cluster_kwargs == {"n_workers": 1, "autoclose": False}
-        assert executor.adapt_kwargs == {}
+        assert isinstance(executor, LocalExecutor)
 
 
 @responses.activate
@@ -454,7 +457,7 @@ def test_get_environment_fails_if_flow_not_registered():
         prefect_cloud_project_name=TEST_PREFECT_PROJECT_NAME
     )
     with raises(RuntimeError, match=prefect_saturn.Errors.NOT_REGISTERED):
-        integration._get_environment(cluster_kwargs={}, adapt_kwargs={})
+        integration._get_environment(LocalExecutor())
 
 
 @responses.activate
@@ -470,7 +473,7 @@ def test_add_environment_fails_if_id_not_recognized():
         integration._set_flow_metadata(flow=flow, instance_size=None)
 
         with raises(HTTPError, match="404 Client Error"):
-            integration._get_environment(cluster_kwargs={}, adapt_kwargs={})
+            integration._get_environment(LocalExecutor())
 
 
 @responses.activate
@@ -520,10 +523,10 @@ def test_register_flow_with_saturn_does_everything():
 
         if RUN_CONFIG_AVAILABLE:
             assert isinstance(flow.run_config, KubernetesRun)
-            assert isinstance(flow.executor, DaskExecutor)
+            assert isinstance(flow.executor, LocalExecutor)
         else:
             assert isinstance(flow.environment, KubernetesJobEnvironment)
-            assert isinstance(flow.environment.executor, DaskExecutor)
+            assert isinstance(flow.environment.executor, LocalExecutor)
 
 
 @responses.activate

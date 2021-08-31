@@ -17,7 +17,13 @@ from packaging.version import Version, parse
 
 from ruamel.yaml import YAML
 
-from ._compat import DaskExecutor, KUBE_JOB_ENV_AVAILABLE, RUN_CONFIG_AVAILABLE, Webhook
+from ._compat import (
+    DaskExecutor,
+    LocalExecutor,
+    KUBE_JOB_ENV_AVAILABLE,
+    RUN_CONFIG_AVAILABLE,
+    Webhook,
+)
 from .settings import Settings
 from .messages import Errors
 
@@ -218,8 +224,7 @@ class PrefectCloudIntegration:
         :param flow: A Prefect ``Flow`` object
         :param dask_cluster_kwargs: Dictionary of keyword arguments
             to the ``dask_saturn.SaturnCluster`` constructor. If ``None``
-            (the default), the cluster will be created with
-            one worker (``{"n_workers": 1}``).
+            (the default), no cluster will be created.
         :param dask_adapt_kwargs: Dictionary of keyword arguments
             to pass to ``dask_saturn.SaturnCluster.adapt()``. If
             ``None`` (the default), adaptive scaling will not be used.
@@ -293,37 +298,33 @@ class PrefectCloudIntegration:
         The returned dict maps instance_size to a short description of the resources available on
         that size (e.g. {"medium": "Medium - 2 cores - 4 GB RAM", ...})
         """
-        default_cluster_kwargs = {"n_workers": 1, "autoclose": False}
-
-        if dask_cluster_kwargs is None:
-            dask_cluster_kwargs = default_cluster_kwargs
-        elif dask_cluster_kwargs != {}:
-            default_cluster_kwargs.update(dask_cluster_kwargs)
-            dask_cluster_kwargs = default_cluster_kwargs
-
-        if dask_adapt_kwargs is None:
-            dask_adapt_kwargs = {}
-
         self._set_flow_metadata(flow, instance_size=instance_size)
 
         storage = self._get_storage()
         flow.storage = storage
 
-        if RUN_CONFIG_AVAILABLE:
-            flow.executor = DaskExecutor(
+        executor: Union[LocalExecutor, DaskExecutor] = LocalExecutor()
+
+        if dask_cluster_kwargs is not None:
+            if dask_adapt_kwargs is None:
+                dask_adapt_kwargs = {}
+
+            executor = DaskExecutor(
                 cluster_class="dask_saturn.SaturnCluster",
                 cluster_kwargs=dask_cluster_kwargs,
                 adapt_kwargs=dask_adapt_kwargs,
             )
+
+        if RUN_CONFIG_AVAILABLE:
+            flow.executor = executor
+
             flow.run_config = KubernetesRun(
                 job_template=self._flow_run_job_spec,
                 labels=self._saturn_flow_labels,
                 image=self._saturn_image,
             )
         else:
-            flow.environment = self._get_environment(
-                cluster_kwargs=dask_cluster_kwargs, adapt_kwargs=dask_adapt_kwargs
-            )
+            flow.environment = self._get_environment(executor)
 
         return flow
 
@@ -368,11 +369,7 @@ class PrefectCloudIntegration:
         job_dict = response.json()
         return job_dict
 
-    def _get_environment(
-        self,
-        cluster_kwargs: Dict[str, Any],
-        adapt_kwargs: Dict[str, Any],
-    ):
+    def _get_environment(self, executor: Union[LocalExecutor, DaskExecutor]):
         """
         Get an environment that customizes the execution of a Prefect flow run.
         """
@@ -384,11 +381,7 @@ class PrefectCloudIntegration:
         # saturn_flow_id is used by Saturn's custom Prefect agent
         k8s_environment = KubernetesJobEnvironment(
             metadata={"saturn_flow_id": self.flow_id, "image": self.image},
-            executor=DaskExecutor(
-                cluster_class="dask_saturn.SaturnCluster",
-                cluster_kwargs=cluster_kwargs,
-                adapt_kwargs=adapt_kwargs,
-            ),
+            executor=executor,
             job_spec_file=local_tmp_file,
             labels=self._saturn_flow_labels,
             unique_job_name=True,
