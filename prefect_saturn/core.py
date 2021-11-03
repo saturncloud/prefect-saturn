@@ -375,7 +375,7 @@ class PrefectCloudIntegration:
         """
 
         local_tmp_file = "/tmp/prefect-flow-run.yaml"
-        with open(local_tmp_file, "w") as f:
+        with open(local_tmp_file, "w", encoding="utf8") as f:
             YAML().dump(self._flow_run_job_spec, stream=f)
 
         # saturn_flow_id is used by Saturn's custom Prefect agent
