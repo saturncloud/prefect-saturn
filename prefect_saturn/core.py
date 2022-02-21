@@ -3,12 +3,11 @@ This module contains the user-facing API for ``prefect-saturn``.
 """
 
 import hashlib
-
+import json
 from typing import Any, Dict, List, Optional, Union
 from requests import Session
 from requests.adapters import HTTPAdapter
 
-import cloudpickle
 import prefect
 from prefect import Flow
 from prefect.client import Client
@@ -126,7 +125,7 @@ class PrefectCloudIntegration:
             tenant_id,
         ]
         hasher = hashlib.sha256()
-        hasher.update(cloudpickle.dumps(identifying_content))
+        hasher.update(json.dumps(identifying_content).encode("utf-8"))
         return hasher.hexdigest()
 
     def _set_flow_metadata(self, flow: Flow, instance_size: Union[str, None]) -> None:

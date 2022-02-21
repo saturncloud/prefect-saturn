@@ -9,7 +9,6 @@ with open("VERSION", "r") as f:
 
 # prefect has to be 0.13.0 or newer to get Webhook storage
 install_requires = [
-    "cloudpickle",
     "dask-saturn>=0.0.4",
     "packaging",
     "prefect>0.13.0",
