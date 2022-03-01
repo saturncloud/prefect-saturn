@@ -125,7 +125,7 @@ class PrefectCloudIntegration:
             tenant_id,
         ]
         hasher = hashlib.sha256()
-        hasher.update(json.dumps(identifying_content).encode("utf-8"))
+        hasher.update(cloudpickle.dumps(identifying_content, protocol=4))
         return hasher.hexdigest()
 
     def _set_flow_metadata(self, flow: Flow, instance_size: Union[str, None]) -> None:
