@@ -3,12 +3,12 @@ This module contains the user-facing API for ``prefect-saturn``.
 """
 
 import hashlib
-import json
 from typing import Any, Dict, List, Optional, Union
 from requests import Session
 from requests.adapters import HTTPAdapter
 
 import prefect
+import cloudpickle
 from prefect import Flow
 from prefect.client import Client
 
