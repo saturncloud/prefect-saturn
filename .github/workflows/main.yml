@@ -9,9 +9,9 @@ on:
   pull_request:
     branches:
     - main
-  schedule:
+  # schedule:
     # Run every Monday morning at 11:00a UTC, 6:00a CST
-    - cron: '0 11 * * 1'
+    # - cron: '0 11 * * 1'
 
 jobs:
   test:
